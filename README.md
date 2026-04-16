@@ -143,8 +143,9 @@ The factory uses these labels for handoffs. Create them in your repo:
 5. Review the plan PR. Swap the `impl:*` label if you disagree. Merge.
 6. Comment `/plan` on the issue (or wait for `needs-plan` to trigger it)
 7. `/plan` creates sub-issues. `implementer-dispatcher` auto-assigns them.
-8. Agents open PRs. `reviewer` + `contribution-checker` review them.
+8. Agents open PRs. `reviewer` + `contribution-checker` + `simplify-and-harden-ci` + `eval-creator-ci` review them.
 9. Merge the PRs. Done.
+10. Weekly: `learning-aggregator-ci` analyzes accumulated learnings, ranks promotion candidates.
 
 ## Workflows
 
@@ -363,6 +364,107 @@ safe-outputs:
 ---
 ```
 
+### simplify-and-harden-ci
+
+Triggers on PR events. Headless quality and security scan on changed files. Runs simplify, harden, and document passes without modifying code. Posts structured findings.
+
+```yaml
+---
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+timeout-minutes: 8
+engine:
+  id: copilot
+  model: gpt-5.4
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+tools:
+  github:
+    toolsets: [pull_requests, actions]
+safe-outputs:
+  add-comment:
+    max: 1
+    hide-older-comments: true
+---
+```
+
+### learning-aggregator-ci
+
+Runs weekly. Reads all accumulated `.learnings/` entries, groups by pattern key, computes cross-session recurrence, and ranks promotion candidates. Posts gap report as an issue.
+
+```yaml
+---
+on:
+  schedule: weekly on monday
+  workflow_dispatch:
+timeout-minutes: 10
+engine:
+  id: copilot
+  model: gpt-5.4
+permissions:
+  contents: read
+  actions: read
+  issues: read
+  pull-requests: read
+tools:
+  github:
+    toolsets: [pull_requests, actions, issues]
+  cache-memory: true
+safe-outputs:
+  create-issue:
+    max: 1
+    title-prefix: "[learnings] "
+    labels: [self-improvement, automation]
+    close-older-issues: true
+tracker-id: learning-aggregator
+---
+```
+
+### eval-creator-ci
+
+Triggers on PR events. Runs regression tests from `.evals/cases/` to verify promoted rules still hold. Gate policy: advisory (reports results, does not block merge).
+
+```yaml
+---
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+timeout-minutes: 8
+engine:
+  id: copilot
+  model: gpt-5.4
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+tools:
+  github:
+    toolsets: [pull_requests, actions]
+  cache-memory: true
+  bash:
+    - "grep"
+    - "rg"
+    - "cat"
+    - "head"
+    - "wc"
+    - "test"
+    - "ls"
+    - "find"
+    - "pytest"
+    - "ruff"
+safe-outputs:
+  add-comment:
+    max: 1
+    hide-older-comments: true
+tracker-id: eval-creator
+---
+```
+
 ## Skills
 
 The factory workflows are thin adapter shells. The actual agent logic lives in skills from [pskoett/pskoett-ai-skills](https://github.com/pskoett/pskoett-ai-skills):
@@ -371,8 +473,12 @@ The factory workflows are thin adapter shells. The actual agent logic lives in s
 |-------|---------|---------|
 | `plan-interview` | spec-refiner | Structured requirements interview before planning |
 | `self-improvement` | self-improvement-meta | Learning capture, categorization, and promotion |
-| `dx-data-navigator` | reviewer | DORA metrics from DX Data Cloud (optional) |
 | `intent-framed-agent` | reviewer | Scope drift detection against plan intent |
+| `simplify-and-harden` | simplify-and-harden-ci | Quality and security sweep (three passes) |
+| `verify-gate` | (available) | Machine verification gate (tests, lint) before quality review |
+| `eval-creator` | eval-creator-ci | Create and run regression test cases from promoted learnings |
+| `learning-aggregator` | learning-aggregator-ci | Cross-session pattern detection and promotion ranking |
+| `pre-flight-check` | (available) | Session-start visibility of prior learnings and eval status |
 | `context-surfing` | (available) | Context window health monitoring |
 
 Skills live in `.claude/skills/` and work identically in Claude Code, Codex CLI, and gh-aw. Update a skill once, every consumer gets the fix.
