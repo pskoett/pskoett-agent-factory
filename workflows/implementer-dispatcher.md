@@ -26,42 +26,38 @@ safe-outputs:
 
 # Implementer Dispatcher
 
-You auto-assign issues to the correct cloud coding agent based on the issue's implementer label. This removes the need for humans to assign each issue individually.
+You auto-assign issues to the Copilot cloud agent based on the issue's implementer label. The `ready-for-implementation` label is applied directly to the source issue by `plan-merged-dispatcher` after the plan PR merges. There is no sub-issue layer.
 
-The `ready-for-implementation` label is applied directly to the source issue by `plan-merged-dispatcher` after the plan PR merges. There is no sub-issue layer.
+## Routing model
+
+Only `impl:copilot` auto-routes. The other `impl:*` labels exist as signals for humans who want to hand-assign via the GitHub UI, but the factory cannot dispatch them from a workflow.
+
+Why: the GitHub REST API path available to workflows accepts Copilot as a valid assignee but silently drops Partner Agents such as Claude and Codex. The UI assignees picker uses a different backend path. Until GitHub exposes proper API-based assignment for Partner Agents, keep the other labels as manual hand-off signals.
 
 ## Process
 
 ### Step 1: Read the implementer label from this issue
 
-Look for one of these labels on the triggering issue:
-
-- `impl:copilot`: assign to Copilot cloud agent
-- `impl:claude-opus`, `impl:claude-sonnet`, `impl:codex`: manual hand-off outside the factory
-
-If the issue has no implementer label, default to `impl:copilot` and note that in the comment.
+- `impl:copilot`: continue to Step 2.
+- `impl:claude-opus`, `impl:claude-sonnet`, `impl:codex`: call `noop` with a comment explaining that only `impl:copilot` auto-routes today and Partner Agents must be assigned manually in the GitHub UI.
+- No implementer label: default to `impl:copilot` and note that in the comment.
 
 ### Step 2: Assign the issue
 
-For `impl:copilot`:
-
-- use `assign-to-agent`
-- add `assigned-to-agent`
-- comment: `Assigned to Copilot cloud agent based on label impl:copilot.`
-
-For `impl:claude-*` and `impl:codex`:
-
-- do not call `assign-to-agent`
-- comment that the issue requires manual hand-off because only `impl:copilot` auto-routes
-- call `noop`
+Use `assign-to-agent` to assign this issue to the Copilot cloud agent. Add the `assigned-to-agent` label. Post a brief comment: `Assigned to Copilot cloud agent based on label impl:copilot.`
 
 ## Noop conditions
 
 Call `noop` if:
 
 - The issue is labeled `human-review`
-- The issue already has `assigned-to-agent`
+- The issue already has the `assigned-to-agent` label
+- The issue uses a non-Copilot implementer label
 
 ## Style
 
 Follow the writing rules in `AGENTS.md`. One-line comments. No filler.
+
+## Session capture
+
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.

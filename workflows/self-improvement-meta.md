@@ -77,6 +77,15 @@ For each failed, cancelled, or reviewer-flagged run (`needs-changes`, `spec-drif
 - Last few tool calls before the failure
 - Any threat detection flags
 
+### Step 2b: Ingest transcript candidates from learning-aggregator-ci
+
+`learning-aggregator-ci` runs weekly. When it finds patterns in transcript artifacts that merit promotion, it flags them in its output issue body with the `**TRANSCRIPT CANDIDATE**` prefix and explicitly does not write them to `.learnings/LEARNINGS.md` itself. It routes them here.
+
+1. Find the most recent `learning-aggregator-ci` output from the last 7 days.
+2. Extract every line or block starting with `**TRANSCRIPT CANDIDATE**`.
+3. Treat each candidate as an additional input to Step 3 alongside the log-derived patterns.
+4. If no recent aggregator output exists, skip this step silently.
+
 ### Step 3: Apply the self-improvement skill
 
 Follow the skill's process for:
@@ -121,3 +130,7 @@ Silence is the correct signal when the factory is healthy.
 ## Style
 
 Follow the writing rules in `AGENTS.md`. No em-dashes. Learnings are durable. Write them like you mean it.
+
+## Session capture
+
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. This workflow combines two signal sources, workflow-level telemetry plus transcript candidates from `learning-aggregator-ci`, and feeds both through the same Pattern-Key dedupe and promotion pipeline.

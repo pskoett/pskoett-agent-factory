@@ -33,6 +33,11 @@ This diagram reflects the tested agent-factory flow that now backs this template
 |  context-surfing/      verify-gate/                         |
 |  pre-flight-check/                                         |
 +-------------------------------------------------------------+
+
++-------------------------------------------------------------+
+|                    Observability Layer                      |
+|  session transcripts, tool outputs, token usage artifacts   |
++-------------------------------------------------------------+
 ```
 
 ## Execution Flow
@@ -75,6 +80,9 @@ coding agent opens PR
   +--> simplify-and-harden-ci
   +--> eval-creator-ci
   |
+  +--> reviewer adds needs-rebase when PR is behind main
+  +--> reviewer self-tamper guard can force human-review
+  |
   +--> conflict-resolver when labeled needs-rebase
   |
   v
@@ -97,7 +105,7 @@ The factory still uses `impl:*` labels, but only one of them is truly automatabl
 | `impl:claude-sonnet` | manual hand-off |
 | `impl:codex` | manual hand-off |
 
-That change matters. The old design implied that all implementer labels were equal. In practice they were not. `assign-to-agent` can target the Copilot cloud agent because it is a real GitHub account. The other labels are planning metadata for humans.
+That change matters. The old design implied that all implementer labels were equal. In practice they were not. `assign-to-agent` can target the Copilot cloud agent because it is a real GitHub account on the workflow-available assignment path. Claude and Codex remain manual UI assignments.
 
 ## Why There Is No `/plan`
 
@@ -118,3 +126,12 @@ Two parts of the tested flow are better as plain GitHub Actions:
 - `lock-file-sync.yml` validates compiled `.lock.yml` files
 
 These jobs are infrastructure glue, not reasoning-heavy agent work.
+
+## Transcript Feedback
+
+The current chain also has an explicit observability loop:
+
+- agent-backed workflows emit `agent` artifacts
+- `learning-aggregator-ci` analyzes them weekly
+- transcript-only patterns are routed back into `self-improvement-meta`
+- promoted rules land in the harness files and workflow prompts

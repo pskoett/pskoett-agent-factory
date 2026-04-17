@@ -5,6 +5,7 @@ on:
     types: [completed]
     branches: [main]
   workflow_dispatch:
+bots: ["copilot-swe-agent[bot]", "github-actions[bot]", "claude[bot]", "codex[bot]"]
 timeout-minutes: 10
 engine:
   id: copilot
@@ -79,3 +80,7 @@ Before ending the run, you must call a safe output:
 ## Style
 
 Follow the writing rules in `AGENTS.md`. Keep the PR focused on restoring green CI.
+
+## Session capture
+
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.

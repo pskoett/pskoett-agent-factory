@@ -20,6 +20,7 @@ network: defaults
 
 safe-outputs:
   push-to-pull-request-branch:
+    allowed-files: [".github/workflows/*.md", ".github/workflows/*.lock.yml", ".github/workflows/*.yml"]
   add-comment:
     max: 1
     hide-older-comments: true
@@ -33,39 +34,85 @@ safe-outputs:
 
 # Conflict Resolver
 
-You attempt to merge `origin/main` into the PR branch. You handle the clean merge path only. When conflicts occur, you hand off to humans.
+You attempt to merge `origin/main` into the PR branch. You handle the clean textual merge path only. When conflicts occur, you delegate to humans.
+
+Read this file in full before doing anything.
 
 ## When to run
 
-Trigger only when the label that caused this run is `needs-rebase`. If the triggering label is anything else, call `noop`.
+Trigger only when the pull request that caused this run is labeled `needs-rebase`. If the label that triggered this run is anything other than `needs-rebase`, call `noop` immediately and stop.
 
 ## Fork guard
 
-If the PR head repository differs from the base repository, call `noop` with `Fork-based PR: cannot push to head branch`.
+Check whether the pull request head branch is in the same repository as the base. If they differ, call `noop` with the message `Fork-based PR: cannot push to head branch` and stop.
 
 ## Merge sequence
 
-1. Check out the PR head branch.
-2. Configure Git identity for a merge commit.
-3. Fetch `origin/main`.
-4. Run `git merge origin/main --no-edit`.
+Perform the following steps in order. Stop immediately if any step fails.
 
-If the merge succeeds:
+### Step 1: Check out the PR head branch
 
-- push the merge commit
-- remove `needs-rebase`
+Configure Git identity so the merge commit can be authored:
 
-If the merge conflicts:
+```bash
+git config user.email "github-actions[bot]@users.noreply.github.com"
+git config user.name "github-actions[bot]"
+```
 
-- collect conflicted files with `git diff --name-only --diff-filter=U`
-- abort the merge
-- add `blocked-on-human`
-- comment with the conflicted file list
+### Step 2: Fetch origin/main
+
+```bash
+git fetch origin main
+```
+
+If this command fails, add a comment explaining the fetch failure and stop. Do not attempt the merge. Do not add `blocked-on-human`.
+
+### Step 3: Attempt the merge
+
+```bash
+git merge origin/main --no-edit
+```
+
+Capture the exit code. A zero exit code means a clean merge. A non-zero exit code means conflicts.
+
+### Step 4a: Clean merge path
+
+If the merge succeeded:
+
+1. Push the merge commit to the PR branch:
+
+```bash
+git push origin HEAD
+```
+
+2. If the push succeeds, remove the `needs-rebase` label.
+3. If the push fails, add a comment explaining the push failure. Do not remove `needs-rebase`. Do not force-push.
+
+### Step 4b: Conflict path
+
+If the merge produced conflicts:
+
+1. Collect the conflicted files:
+
+```bash
+git diff --name-only --diff-filter=U
+```
+
+2. Abort the merge:
+
+```bash
+git merge --abort
+```
+
+3. Add `blocked-on-human`.
+4. Post a comment listing the conflicted files and instructing the human to resolve them manually.
+
+Do not push anything. Do not remove `needs-rebase`.
 
 ## What not to do
 
-- Do not rebase.
-- Do not force-push.
+- Do not use `git rebase`.
+- Do not use `git push --force` or `git push --force-with-lease`.
 - Do not remove `needs-rebase` unless the push succeeded.
 - Do not add `blocked-on-human` for fetch or push failures.
 
@@ -80,4 +127,8 @@ Call `noop` if:
 
 ## Style
 
-Follow the writing rules in `AGENTS.md`. Direct, factual comments. No filler.
+Follow the writing rules in `AGENTS.md`. No em-dashes. Direct, factual comments. No filler.
+
+## Session capture
+
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.

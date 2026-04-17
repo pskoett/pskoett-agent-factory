@@ -10,6 +10,8 @@ This repository is the source template for the tested GitHub agent factory.
 - `plan-merged-dispatcher` writes the implementation checklist back onto the source issue body.
 - Only `impl:copilot` auto-routes today.
 - `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` are manual hand-off labels.
+- The workflow-available REST assignment path silently drops Partner Agents, so Claude and Codex remain manual hand-offs.
+- Agent-backed workflows upload session transcripts as `agent` artifacts for the learning loop.
 
 ## Repo Layout
 
@@ -25,3 +27,4 @@ This repository is the source template for the tested GitHub agent factory.
 - Do not reintroduce `/plan` or sub-issue routing.
 - Do not reintroduce sequential plan numbering.
 - If you add or change workflow files, make sure `install.sh` copies them.
+- Keep operator docs aligned with review self-tamper, `needs-rebase`, and transcript-driven learning behavior.

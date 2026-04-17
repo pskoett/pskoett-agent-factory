@@ -57,6 +57,9 @@ The current flow fixes those problems:
 - merged plans write their checklist back onto the source issue body
 - the source issue itself gets `ready-for-implementation`
 - only `impl:copilot` is auto-routed
+- reviewer marks PRs that are behind `main` with `needs-rebase`
+- reviewer refuses to self-review PRs that modify its own instructions or adjacent guardrails
+- the outer loop can inspect session transcripts through uploaded `agent` artifacts
 
 ## Repository Structure
 
@@ -95,6 +98,7 @@ Apply these in the target repository:
 | Allow PR creation | Enabled | `ci-cleaner` and `self-improvement-meta` open PRs |
 | Copilot cloud agent | Enabled | Required for `impl:copilot` routing |
 | Copilot code review | Enabled | Useful for inline review on PRs |
+| Partner Agents | Optional | Enables manual UI assignment of Claude or Codex, but not workflow auto-dispatch |
 | Actions permissions | Allow all actions and reusable workflows | Needed for the full factory chain |
 
 ### Secrets
@@ -104,10 +108,9 @@ Set these in the target repository when you install the factory:
 | Secret | Why |
 |--------|-----|
 | `COPILOT_GITHUB_TOKEN` | gh-aw runtime auth |
-| `GH_AW_GITHUB_TOKEN` | checkout and label writes |
-| `GH_AW_GITHUB_MCP_SERVER_TOKEN` | GitHub MCP server auth |
-| `GH_AW_AGENT_TOKEN` | issue assignment for the Copilot cloud agent |
-| `GH_AW_CI_TRIGGER_TOKEN` | lets follow-up workflows trigger other workflows when needed |
+| `GH_AW_AGENT_TOKEN` | issue assignment for Copilot and label cascades from `plan-merged-dispatcher` |
+
+`plan-merged-dispatcher` must use a PAT such as `GH_AW_AGENT_TOKEN`, not the default `GITHUB_TOKEN`, because label events emitted by `GITHUB_TOKEN` do not trigger downstream workflows.
 
 ## Installation
 
@@ -143,7 +146,7 @@ The factory keeps the old labels, but not all of them can be auto-routed.
 | `impl:claude-sonnet` | No | Manual hand-off outside the factory |
 | `impl:codex` | No | Manual hand-off outside the factory |
 
-`spec-refiner` always applies `impl:copilot` by default because that is the only route the factory can actually complete without human intervention.
+`spec-refiner` always applies `impl:copilot` by default because that is the only route the factory can actually complete without human intervention. Claude and Codex may appear in the GitHub UI assignees picker, but the workflow-available REST path does not reliably assign them.
 
 ## Workflow Inventory
 
@@ -205,6 +208,30 @@ This is the key structural change. It activates the source issue after plan PR m
 This guards the compiled `.lock.yml` files. It exists because stale lock files caused real drift during testing.
 
 The companion helper script is [`../scripts/check-workflow-lock-sync.sh`](../scripts/check-workflow-lock-sync.sh).
+
+## New Guardrails
+
+### Reviewer Self-Tamper Guard
+
+`reviewer` noops and applies `human-review` if a PR modifies:
+
+- `.github/workflows/reviewer.md`
+- `.github/workflows/self-improvement-meta.md`
+- `.github/copilot-instructions.md`
+
+That rule exists because those files can directly alter the reviewer's own behavior or adjacent safety rails.
+
+### Behind-Main Detection
+
+`reviewer` checks `mergeStateStatus` early. If the PR is `BEHIND`, it applies `needs-rebase` and continues the review. `conflict-resolver` then handles the clean merge path from `origin/main`.
+
+### Transcript-Driven Learning Loop
+
+Agent-backed workflows upload an `agent` artifact that contains the session transcript, tool outputs, and token usage. `learning-aggregator-ci` analyzes those artifacts weekly, then routes transcript-only patterns back into `self-improvement-meta` using `**TRANSCRIPT CANDIDATE**` markers.
+
+### Project-Specific Optional Feature
+
+`measuring-ai-proficiency` also has a Projects v2 status sync workflow. It is intentionally not auto-installed by this template because it depends on repo-specific project IDs and PAT scopes. Treat that as a project-level customization, not a factory default.
 
 ## Operator Notes
 

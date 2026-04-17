@@ -5,6 +5,7 @@ on:
     paths-ignore:
       - docs/plans/**
   workflow_dispatch:
+bots: ["copilot-swe-agent[bot]", "github-actions[bot]", "claude[bot]", "codex[bot]"]
 timeout-minutes: 8
 engine:
   id: copilot
@@ -52,9 +53,13 @@ Read `.claude/skills/eval-creator/SKILL.md` in full. Follow its verification met
 2. For each eval case file in `.evals/cases/`:
    a. Read the eval case metadata and verification method.
    b. Check preconditions. If not met, mark as `skip`.
-   c. Execute the verification method.
+   c. Execute the verification method:
+      - `grep-check`: search target files for pattern, compare to expected
+      - `command-check`: run the command, check exit code or output
+      - `file-check`: verify a file or section exists
+      - `rule-check`: read a target file and search for expected content
    d. Record pass, fail, or skip.
-3. Do not modify source code.
+3. Do not modify source code. Eval execution is read-only.
 4. Gate policy is advisory.
 
 ## Output
@@ -88,8 +93,12 @@ Call `noop` if:
 
 - `.evals/` directory does not exist
 - `EVAL_INDEX.md` is empty or missing
-- No eval cases exist
+- No eval cases to run
 
 ## Style
 
 Follow the writing rules in `AGENTS.md`. Tables. Pass or fail. No hedging.
+
+## Session capture
+
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.

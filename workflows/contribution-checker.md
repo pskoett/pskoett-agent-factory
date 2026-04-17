@@ -3,6 +3,7 @@ on:
   pull_request:
     types: [opened, synchronize, ready_for_review]
   workflow_dispatch:
+bots: ["copilot-swe-agent[bot]", "github-actions[bot]", "claude[bot]", "codex[bot]"]
 timeout-minutes: 5
 engine:
   id: copilot
@@ -95,3 +96,7 @@ Call `noop` if:
 ## Style
 
 Follow the writing rules in `AGENTS.md`. Be constructive and specific.
+
+## Session capture
+
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.

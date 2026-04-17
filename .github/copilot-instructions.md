@@ -9,6 +9,8 @@ This repository is the source template for a GitHub agent factory.
 - `plan-merged-dispatcher` activates the source issue after the plan PR merges.
 - `implementer-dispatcher` auto-routes only `impl:copilot`.
 - Plan PRs use non-closing source issue references.
+- Reviewer applies a self-tamper guard to PRs that touch its own instructions or adjacent guardrails.
+- Agent-backed workflows upload `agent` transcript artifacts used by the learning loop.
 
 ## Repo Facts
 
@@ -23,3 +25,4 @@ This repository is the source template for a GitHub agent factory.
 - If you add a workflow that needs a label, update `install.sh`.
 - If you add a plain Actions workflow or helper script, update both docs and installer copy logic.
 - Do not claim auto-routing exists for Claude or Codex. It does not in this factory.
+- Keep the docs honest about GitHub Partner Agents: manual UI assignment may work, workflow auto-dispatch does not.

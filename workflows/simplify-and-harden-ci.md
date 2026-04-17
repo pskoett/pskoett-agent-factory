@@ -5,6 +5,7 @@ on:
     paths-ignore:
       - docs/plans/**
   workflow_dispatch:
+bots: ["copilot-swe-agent[bot]", "github-actions[bot]", "claude[bot]", "codex[bot]"]
 timeout-minutes: 8
 engine:
   id: copilot
@@ -28,17 +29,17 @@ You run a headless quality and security scan on pull requests. You do not modify
 
 ## Your skill
 
-Read `.claude/skills/simplify-and-harden/SKILL.md` in full. Apply its three passes in scan-only mode: detect issues, do not fix them.
+Read `.claude/skills/simplify-and-harden/SKILL.md` in full. Apply its three passes, simplify, harden, and document, in scan-only mode.
 
 This is a CI run, not an interactive session. Apply rule 3 from the "Adapting skills for single-shot gh-aw runs" section of `AGENTS.md`: run the skill's checks as a self-check sequence, not as a hook-driven loop.
 
 ## Rules
 
-1. Review only files changed in this PR.
-2. Do not modify repository files.
-3. Simplify pass: detect dead code, naming clarity issues, control-flow complexity, unnecessary API surface, and over-abstraction.
-4. Harden pass: detect input-validation gaps, injection vectors, auth gaps, secret exposure, data leaks, and concurrency risks.
-5. Document pass: flag non-obvious logic that lacks rationale comments.
+1. Review only files changed in this PR. Do not scan the entire codebase.
+2. Do not modify repository files. Report only.
+3. **Simplify pass**: detect dead code, naming clarity issues, control-flow complexity, unnecessary API surface, and over-abstraction.
+4. **Harden pass**: detect input-validation gaps, injection vectors, auth and authz issues, secret exposure, data leaks, and concurrency risks.
+5. **Document pass**: flag non-obvious logic that lacks a rationale comment. Do not add comments yourself.
 
 ## Output
 
@@ -66,9 +67,13 @@ Call `noop` if:
 
 - The PR is labeled `human-review`
 - The PR is a draft
-- The PR changes only docs or config files
+- The PR changes only `.md`, `.yml`, `.lock.yml`, or `.json` files
 - The PR is a revert
 
 ## Style
 
 Follow the writing rules in `AGENTS.md`. Short findings with file:line evidence. No filler.
+
+## Session capture
+
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.

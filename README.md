@@ -26,6 +26,14 @@ The practical consequences are simpler and more reliable:
 
 Only `impl:copilot` auto-routes today. `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` remain useful labels for manual hand-off, but the factory does not auto-assign them.
 
+Recent stabilizations from the test project are also included here:
+
+- `reviewer` auto-labels PRs that are behind `main` with `needs-rebase`
+- `reviewer` refuses to self-review PRs that modify its own instructions or adjacent guardrails
+- `conflict-resolver` can safely merge workflow-file changes from `main`
+- agent-backed workflows emit session transcript artifacts for the outer learning loop
+- `learning-aggregator-ci` consumes those transcript artifacts and routes transcript-only patterns back into `self-improvement-meta`
+
 ## Repository Layout
 
 This repo is a template source, not a live installed factory:
@@ -117,6 +125,8 @@ Plain GitHub Actions support workflows:
 
 - [`workflow-support/plan-merged-dispatcher.yml`](./workflow-support/plan-merged-dispatcher.yml)
 - [`workflow-support/lock-file-sync.yml`](./workflow-support/lock-file-sync.yml)
+
+The current template does **not** auto-install the Project board sync workflow from `measuring-ai-proficiency` because that workflow is tied to repo-specific Projects v2 IDs and PAT configuration. If you want it, port it as a project-specific customization after installation.
 
 ## Skills
 

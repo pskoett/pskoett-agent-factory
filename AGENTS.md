@@ -69,7 +69,7 @@ When editing this repository, use these paths:
 1. **Do not reintroduce `/plan` or sub-issue routing.**
 2. **Do not reintroduce sequential plan numbering.**
 3. **Plan PRs must reference the source issue with `Refs #N`, not a closing keyword.**
-4. **Only `impl:copilot` auto-routes today.** `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` are manual hand-off labels.
+4. **Only `impl:copilot` auto-routes today.** `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` are manual hand-off labels because the workflow-available REST API path silently drops Partner Agent assignees.
 5. **Keep the harness files aligned.** When a durable rule changes, update `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
 6. **Keep the installer aligned with the file layout.** If you add or rename workflows, support files, scripts, or labels, update `install.sh`.
 7. **Keep the docs aligned with the actual flow.** At minimum, update `README.md`, `docs/AGENT_FACTORY.md`, and `docs/chain.md` together when the flow changes.
@@ -159,6 +159,8 @@ When a learning is promoted, write it to:
 
 Add it to a workflow body too when the rule is workflow-specific.
 
+Every agent-backed workflow run also uploads an `agent` artifact containing the session transcript, tool outputs, and token usage. `learning-aggregator-ci` consumes these artifacts weekly to surface transcript-derived patterns that are not yet captured in `.learnings/`.
+
 ## Routing Guidance
 
 The factory retains multiple implementer labels, but platform reality matters more than theory.
@@ -169,6 +171,7 @@ The factory retains multiple implementer labels, but platform reality matters mo
 - Only auto-routable implementer in this factory
 - Selected via `impl:copilot`
 - Dispatched by `implementer-dispatcher`
+- Works because the available workflow assignment path supports Copilot
 
 ### Manual labels
 
@@ -181,7 +184,7 @@ The factory retains multiple implementer labels, but platform reality matters mo
 **Codex GPT-5.4**
 - Use when a human wants a manual Codex hand-off or A/B comparison
 
-`spec-refiner` recommends `copilot` by default because it is the only route the factory can complete automatically.
+`spec-refiner` recommends `copilot` by default because it is the only route the factory can complete automatically. Claude and Codex may appear in the GitHub UI assignees picker, but the workflow-accessible REST path does not reliably assign them.
 
 ## Workflow Inventory
 
@@ -190,14 +193,14 @@ The factory retains multiple implementer labels, but platform reality matters mo
 | `spec-refiner` | Issue labeled `needs-spec` | creates plan PR and applies `impl:copilot` |
 | `plan-merged-dispatcher` | Merged plan PR | plain Actions workflow, activates source issue |
 | `implementer-dispatcher` | Issue labeled `ready-for-implementation` | auto-assigns only `impl:copilot` |
-| `reviewer` | PR opened or updated | plan-aware review with implementer calibration |
+| `reviewer` | PR opened or updated | plan-aware review with implementer calibration, self-tamper guard, and behind-main detection |
 | `conflict-resolver` | PR labeled `needs-rebase` | merges `origin/main` into the PR branch when clean |
 | `contribution-checker` | PR opened or updated | checks repo process alignment |
 | `simplify-and-harden-ci` | PR opened or updated | scan-only quality and security pass |
 | `eval-creator-ci` | PR opened or updated | advisory regression checks |
 | `ci-cleaner` | CI failure on `main` | fixes failing mainline CI |
 | `self-improvement-meta` | nightly | extracts learnings and promotes durable rules |
-| `learning-aggregator-ci` | weekly | groups learnings and ranks gaps |
+| `learning-aggregator-ci` | weekly | groups learnings, analyzes transcript artifacts, and ranks gaps |
 | `issue-triage` | issue opened or reopened | issue intake and initial labeling |
 | `pr-fix` | `/pr-fix` comment | on-demand PR repair |
 | `lock-file-sync` | PR touches workflow sources or lock files | plain Actions guard for stale lock files |

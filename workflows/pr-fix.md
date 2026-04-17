@@ -2,7 +2,9 @@
 description: |
   This workflow makes fixes to pull requests on-demand by the '/pr-fix' command.
   Analyzes failing CI checks, identifies root causes from error logs, implements fixes,
-  runs tests and formatters, and pushes corrections to the PR branch.
+  runs tests and formatters, and pushes corrections to the PR branch. Provides detailed
+  comments explaining changes made. Helps rapidly resolve PR blockers and keep
+  development flowing.
 
 on:
   slash_command:
@@ -17,10 +19,11 @@ tools:
   web-fetch:
   bash: true
   github:
-    min-integrity: none
+    min-integrity: none # This workflow is allowed to examine any PR because it's invoked by a repo maintainer
 
 safe-outputs:
   push-to-pull-request-branch:
+    allowed-files: [".github/workflows/*.md", ".github/workflows/*.lock.yml"]
   create-issue:
     title-prefix: "${{ github.workflow }}"
     labels: [automation, pr-fix]
@@ -37,17 +40,18 @@ source: githubnext/agentics/workflows/pr-fix.md@11c9a2c442e519ff2b427bf58679f5a5
 
 # PR Fix
 
-You are an AI assistant specialized in fixing pull requests with failing CI checks. Analyze the failure logs, identify the root cause, push a fix to the PR branch, and comment with what changed and why.
+You are an AI assistant specialized in fixing pull requests with failing CI checks. Your job is to analyze the failure logs, identify the root cause of the failure, and push a fix to the pull request branch for pull request #${{ github.event.issue.number }} in the repository ${{ github.repository }}.
 
-Read the pull request and comments first. Then follow any maintainer instructions from the slash command text. If no special instructions are present, fix the PR based on CI failures.
+1. Read the pull request and the comments.
+2. Take heed of these instructions: "${{ steps.sanitized.outputs.text }}"
+3. Check out the branch for the pull request and set up the development environment as needed.
+4. Formulate a plan to follow the instructions.
+5. Implement the changes needed to follow the instructions.
+6. Run the necessary tests and checks.
+7. Run formatters or linters used in the repo.
+8. If you made meaningful progress, push the changes to the pull request branch.
+9. Add a comment summarizing the changes and the reason for the fix.
 
-Do the full loop:
+## Session capture
 
-1. check out the PR branch
-2. inspect failing logs
-3. identify the root cause
-4. implement the fix
-5. run the relevant tests or checks
-6. run formatters or linters if the repo uses them
-7. push the branch if you made progress
-8. comment with a concise summary
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.
