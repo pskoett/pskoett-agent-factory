@@ -1,149 +1,120 @@
-# The Agent Factory Chain
+# Factory Chain
 
-How the workflows in this repo chain together into a spec, plan, implement, review, learn loop, and how the skills library plugs in underneath.
+This diagram reflects the tested agent-factory flow that now backs this template.
 
-## Layered architecture
+## Layered View
 
-```
+```text
 +-------------------------------------------------------------+
-|                     GitHub Actions Runtime                   |
-|  (triggers, permissions, sandboxing, safe outputs, MCP)      |
+|                     GitHub State Layer                      |
+|  issues, labels, PRs, comments, plan files, workflow runs   |
 +-----------------------------+-------------------------------+
                               |
-+-----------------------------+-------------------------------+
-|                    gh-aw Adapter Layer                       |
-|  (frontmatter, handoff logic, label semantics)              |
-|                                                              |
-|   spec-refiner.md    reviewer.md    self-improvement-meta.md
-+-----------------------------+-------------------------------+
-                              | reads skills from
                               v
 +-------------------------------------------------------------+
-|                    Agent Skills Library                      |
-|  (.claude/skills/ in this repo)                             |
-|                                                              |
-|   plan-interview/    dx-data-navigator/   self-improvement/  |
-|   intent-framed-agent/              context-surfing/        |
+|                  gh-aw And Actions Adapter Layer            |
+|                                                             |
+|  spec-refiner.md          reviewer.md                       |
+|  implementer-dispatcher.md self-improvement-meta.md         |
+|  simplify-and-harden-ci.md learning-aggregator-ci.md        |
+|  eval-creator-ci.md        ci-cleaner.md                    |
+|  conflict-resolver.md      contribution-checker.md          |
+|  issue-triage.md           pr-fix.md                        |
+|  plan-merged-dispatcher.yml lock-file-sync.yml              |
++-----------------------------+-------------------------------+
+                              |
+                              v
++-------------------------------------------------------------+
+|                     Skill Source Layer                      |
+|                                                             |
+|  plan-interview/       intent-framed-agent/                 |
+|  self-improvement/     simplify-and-harden/                 |
+|  learning-aggregator/  eval-creator/                        |
+|  context-surfing/      verify-gate/                         |
+|  pre-flight-check/                                         |
 +-------------------------------------------------------------+
 ```
 
-The adapter layer is thin on purpose. It owns GitHub-specific concerns: when to trigger, what permissions to request, which safe outputs to configure, how to move labels around to hand off to the next workflow. It does **not** own the agent's internal process. That lives in the skills.
+## Execution Flow
 
-Why this matters: the same skill runs in Claude Code on your laptop, in Codex CLI in a terminal, and in gh-aw in GitHub Actions. One canonical definition, three runtime surfaces. Update the skill once, every consumer gets the fix.
+```text
+issue opened
+  |
+  v
+issue-triage
+  |
+  v
+human adds needs-spec
+  |
+  v
+spec-refiner
+  |
+  | writes docs/plans/plan-NNN-<slug>.md
+  | where NNN is the source issue number
+  | adds impl:copilot and needs-plan
+  v
+human reviews and merges the plan PR
+  |
+  v
+plan-merged-dispatcher
+  |
+  | extracts the Implementation Checklist
+  | writes it into the source issue body
+  | removes needs-plan
+  | adds ready-for-implementation
+  v
+implementer-dispatcher
+  |
+  | reads impl:* on the source issue
+  | auto-assigns only impl:copilot
+  v
+coding agent opens PR
+  |
+  +--> reviewer
+  +--> contribution-checker
+  +--> simplify-and-harden-ci
+  +--> eval-creator-ci
+  |
+  +--> conflict-resolver when labeled needs-rebase
+  |
+  v
+merged PR
 
-## The chain at a glance
-
-```
-issues.opened [needs-spec]
-       |
-       v
-+----------------------+
-|   spec-refiner       |   reads .claude/skills/plan-interview/SKILL.md
-|                      |   recommends implementer in plan file
-+----------+-----------+
-           | writes docs/plans/plan-NNN.md with implementer recommendation
-           | labels needs-plan
-           v
-+----------------------+
-|   /plan              |   from githubnext/agentics
-+----------+-----------+
-           | creates sub-issues labeled ready-for-implementation
-           v
-+----------------------+
-|  human assigns       |   via github.com web UI Agents tab
-|  to chosen agent     |   picks model per spec-refiner recommendation
-+----------+-----------+
-           | opens PR
-           v
-       +---+--------------------+
-       |                        |
-  Claude Opus 4.6          Copilot cloud agent
-  Claude Sonnet 4.6        Codex GPT-5.4
-       |                        |
-       +------------+-----------+
-                    v
-+----------------------+
-|   reviewer       |   reads .claude/skills/dx-data-navigator/SKILL.md
-|                      |         .claude/skills/intent-framed-agent/SKILL.md
-|                      |   detects implementer, applies calibration
-+----------+-----------+
-           | labels ai-reviewed | needs-changes | spec-drift | fast-track
-           v
-       +---+----+
-       |        |
-  needs-      ai-
-  changes   reviewed
-       |        |
-       v        v
-+---------+ +---------+
-| /pr-fix | |  human  |
-|         | |  merge  |
-+---------+ +---------+
-     | loops back
-     v
-(eventually merged)
-
-                  | (nightly, independent of the main chain)
-                  v
-       +---------------------------+
-       | self-improvement-meta     |   reads .claude/skills/self-improvement/SKILL.md
-       +------------+--------------+
-                    | reads logs from all runs in last 24h
-                    | opens PR updating AGENTS.md and workflow files
-                    v
-              permanent
-              guardrails
+nightly and weekly side loops:
+  self-improvement-meta
+  learning-aggregator-ci
+  ci-cleaner
 ```
 
-## The implementer routing decision
+## Routing Model
 
-As of April 2026, the implementer step in the chain has four choices, all bundled with the Copilot subscription:
+The factory still uses `impl:*` labels, but only one of them is truly automatable:
 
-| Implementer | Default use case | Why |
-|-------------|------------------|-----|
-| **Claude Opus 4.6** | Complex, multi-file, architecturally risky | Strongest reasoning for precise spec adherence |
-| **Claude Sonnet 4.6** | Single-component features with clear scope | Claude reasoning at lower cost and latency |
-| **Copilot cloud agent** | Trivial changes, dependency bumps, mechanical edits | Fast, cheap, bundled |
-| **Codex GPT-5.4** | Opportunistic, A/B data, different reasoning style | Strong on common patterns |
+| Label | Behavior |
+|-------|----------|
+| `impl:copilot` | auto-assigned by `implementer-dispatcher` |
+| `impl:claude-opus` | manual hand-off |
+| `impl:claude-sonnet` | manual hand-off |
+| `impl:codex` | manual hand-off |
 
-`spec-refiner` assesses the plan and writes a recommendation into the plan file itself. A human reviewing the plan PR sees the recommendation and decides whether to follow it when they assign sub-issues via the github.com web UI Agents tab.
+That change matters. The old design implied that all implementer labels were equal. In practice they were not. `assign-to-agent` can target the Copilot cloud agent because it is a real GitHub account. The other labels are planning metadata for humans.
 
-This is a deliberate human-in-the-loop decision point. The routing rule is "complexity warrants Opus" and only a human can decide, for a given repo on a given day, whether the cost or latency difference is worth it. The spec-refiner recommends, the human chooses, and `reviewer` calibrates the review based on who actually produced the code.
+## Why There Is No `/plan`
 
-See `AGENTS.md` for the full routing guidelines.
+The older `/plan` plus sub-issue layer looked elegant on paper and failed in the messy parts:
 
-## Why five agents instead of one
+- parent lookups were brittle
+- plan numbering raced
+- PR closure semantics caused accidental source-issue closure
+- sub-issue assignment added another state machine to debug
 
-Specialization. Each agent does one job well. When one fails, you can isolate the failure. When one improves, you can measure the improvement independently. They compose through GitHub events (labels, comments, files) rather than through direct coupling. This is choreography, not orchestration.
+The source-issue-centric model is less clever and more reliable.
 
-## How state moves through the chain
+## Why The Plain Actions Workflows Exist
 
-State lives in GitHub, not in memory. Each agent starts cold. The spec file must be written back to the repo so the planner can read it. The plan sub-issues must be labeled so the implementer can find them. The reviewer must read the plan file from disk. Every handoff is mediated by a file, a label, or a PR.
+Two parts of the tested flow are better as plain GitHub Actions:
 
-This makes the chain debuggable. You can inspect the state at any point by looking at the repo.
+- `plan-merged-dispatcher.yml` reacts to merge events and edits issue bodies
+- `lock-file-sync.yml` validates compiled `.lock.yml` files
 
-## How to pause the chain
-
-Add the `human-review` label to any issue or PR. All agents in this pack check for that label at run start and call `noop` if they see it. This is the emergency stop.
-
-## How to fast-forward the chain
-
-Skip phases for simple changes by manually labeling. Want to skip spec-refinement? Label the issue `needs-plan` directly. Want to skip the reviewer? Label the PR `human-review` and review it yourself.
-
-The chain is opinionated, not rigid. You control which steps run.
-
-## How the outer loop closes
-
-`self-improvement-meta` runs nightly. It reads the run logs of every agent that ran in the last 24 hours, extracts failure patterns, and opens a PR that updates `AGENTS.md` or the individual workflow files. When the PR merges, the next run of the affected agent reads the updated instructions.
-
-This is the two-loop model shipped as GitHub Actions. Inner loops run per-task. The outer loop runs per-day. Both are visible in the repo, inspectable as markdown, and owned by the team.
-
-## The human's job
-
-Three decisions:
-
-1. **At spec**: is this plan file correct? If yes, merge. If no, edit and re-run.
-2. **At review**: should this PR ship? The reviewer did the first pass. You do the final one.
-3. **At learning**: is this prevention rule worth keeping? The meta-agent proposes. You approve.
-
-Everything else is automated. That is the point.
+These jobs are infrastructure glue, not reasoning-heavy agent work.

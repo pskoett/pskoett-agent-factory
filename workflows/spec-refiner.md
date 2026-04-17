@@ -25,7 +25,7 @@ safe-outputs:
     title-prefix: "[plan] "
     labels: [plan-file, automation]
   add-labels:
-    allowed: [needs-plan, blocked-on-human, spec-refined, "impl:claude-opus", "impl:claude-sonnet", "impl:copilot", "impl:codex"]
+    allowed: [needs-plan, blocked-on-human, spec-refined, "impl:copilot"]
     max: 3
   remove-labels:
     allowed: [needs-spec]
@@ -42,52 +42,43 @@ Read `.claude/skills/plan-interview/SKILL.md` in full and follow its process. Th
 
 This is a single-shot gh-aw run, not a live session. Follow the skill's process, but when it expects to ask the user questions, apply rule 1 from the "Adapting skills for single-shot gh-aw runs" section of `AGENTS.md`: simulate the interview by answering from issue context, and mark anything you cannot answer with confidence using `**NEEDS HUMAN INPUT**` plus a specific question.
 
-## Complexity assessment and implementer recommendation
+## Implementer recommendation
 
-Before writing the PR, assess the plan against the routing rules in the "Agent routing guidelines" section of `AGENTS.md` and append a `## Recommended implementer` section to the plan file itself.
+Before writing the PR, append a `## Recommended implementer` section to the plan file.
 
-Your assessment should look at:
-- Number of affected areas (files, modules, services)
-- Blast radius from the risk section
-- Length of the implementation checklist
-- Whether rollback is trivial or complex
-- Whether the plan has multiple valid approaches
+Always recommend `copilot`. It is the only implementer the factory can actually auto-assign today: `implementer-dispatcher` uses `assign-to-agent`, which only routes to the Copilot cloud agent. The other `impl:*` labels remain useful for manual hand-off by a human, but they do not complete an automatic assignment.
 
-Pick one of: `claude-opus-4.6`, `claude-sonnet-4.6`, `copilot`, or `codex-gpt-5.4`. Write a one-line rationale explaining the choice. Example:
+Example:
 
 ```markdown
 ## Recommended implementer
 
-**Choice**: claude-opus-4.6
-**Rationale**: Multi-file refactor across auth, session, and database layers with high blast radius and non-trivial rollback. Opus is the right default for this class of work.
+**Choice**: copilot
+**Rationale**: Auto-assignable via `implementer-dispatcher`. A human can still swap the source issue label for manual hand-off before merging the plan PR.
 ```
 
-After writing the recommendation in the plan file, also add the corresponding implementer label to the source issue:
-- `claude-opus-4.6` recommendation: add label `impl:claude-opus`
-- `claude-sonnet-4.6` recommendation: add label `impl:claude-sonnet`
-- `copilot` recommendation: add label `impl:copilot`
-- `codex-gpt-5.4` recommendation: add label `impl:codex`
-
-This label is the default. A human can change it on the issue before commenting `/plan`. The `implementer-dispatcher` workflow will read this label and auto-assign sub-issues to the chosen agent, so the human only decides once at the plan level.
+After writing the recommendation in the plan file, add the `impl:copilot` label to the source issue.
 
 ## gh-aw handoff logic
 
 After the skill completes, the plan file is written, and the implementer is recommended:
 
-1. **Open a PR** with the new plan file at `docs/plans/plan-NNN-<slug>.md`. Title: `[plan] Plan NNN: <title>`. Body links to the source issue, summarizes the key decisions, and restates the implementer recommendation.
-2. **Comment on the source issue** with a one-line summary, a link to the plan PR, and the recommended implementer.
-3. **Swap labels**:
+1. **Open a PR** with the new plan file at `docs/plans/plan-NNN-<slug>.md`, where NNN is the source issue number padded to at least three digits. Do not scan `docs/plans/` for the next sequential number. Title: `[plan] Plan NNN: <title>`.
+2. The PR body must reference the source issue with `Refs #NN`, not a closing keyword such as `Fixes` or `Closes`.
+3. **Comment on the source issue** with a one-line summary, a link to the plan PR, and the recommended implementer.
+4. **Swap labels**:
    - Remove `needs-spec`
-   - Add the implementer label (`impl:claude-opus`, `impl:claude-sonnet`, `impl:copilot`, or `impl:codex`)
-   - Add `needs-plan` if the plan has no open questions (this triggers `/plan` to create sub-issues)
+   - Add `impl:copilot`
+   - Add `needs-plan` if the plan has no open questions. On merge, `plan-merged-dispatcher` will write the checklist onto the source issue body and move it to `ready-for-implementation`.
    - Add `blocked-on-human` if the plan has any `**NEEDS HUMAN INPUT**` markers
 
-## Skip conditions (call noop)
+## Skip conditions
 
 Skip plan creation and call `noop` with a brief explanation comment when:
+
 - The issue already has a linked plan file
 - The issue is labeled `human-review`
-- The skill's own criteria say this is not a plan-worthy task (simple bug fix, docs change, dependency bump, pure research)
+- The skill's own criteria say this is not a plan-worthy task
 - The issue is spam or unclear beyond recovery
 
 ## Style

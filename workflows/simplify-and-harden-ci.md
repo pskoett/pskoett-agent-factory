@@ -2,6 +2,8 @@
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - docs/plans/**
   workflow_dispatch:
 timeout-minutes: 8
 engine:
@@ -26,17 +28,17 @@ You run a headless quality and security scan on pull requests. You do not modify
 
 ## Your skill
 
-Read `.claude/skills/simplify-and-harden/SKILL.md` in full. Apply its three passes (simplify, harden, document) but in scan-only mode: detect issues, do not fix them.
+Read `.claude/skills/simplify-and-harden/SKILL.md` in full. Apply its three passes in scan-only mode: detect issues, do not fix them.
 
 This is a CI run, not an interactive session. Apply rule 3 from the "Adapting skills for single-shot gh-aw runs" section of `AGENTS.md`: run the skill's checks as a self-check sequence, not as a hook-driven loop.
 
 ## Rules
 
-1. Review only files changed in this PR. Do not scan the entire codebase.
-2. Do not modify repository files. Report only.
-3. **Simplify pass**: detect dead code, naming clarity issues, control-flow complexity, unnecessary API surface, and over-abstraction.
-4. **Harden pass**: detect input-validation gaps, injection vectors, auth/authz issues, secret exposure, data leaks, and concurrency risks.
-5. **Document pass**: flag non-obvious logic that lacks a rationale comment. Do not add comments yourself.
+1. Review only files changed in this PR.
+2. Do not modify repository files.
+3. Simplify pass: detect dead code, naming clarity issues, control-flow complexity, unnecessary API surface, and over-abstraction.
+4. Harden pass: detect input-validation gaps, injection vectors, auth gaps, secret exposure, data leaks, and concurrency risks.
+5. Document pass: flag non-obvious logic that lacks rationale comments.
 
 ## Output
 
@@ -61,9 +63,10 @@ Post exactly one comment:
 ## Noop
 
 Call `noop` if:
+
 - The PR is labeled `human-review`
 - The PR is a draft
-- The PR changes only `.md`, `.yml`, `.lock.yml`, or `.json` files (no code to scan)
+- The PR changes only docs or config files
 - The PR is a revert
 
 ## Style

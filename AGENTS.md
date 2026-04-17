@@ -1,197 +1,133 @@
 # Agents
 
-This document defines agent roles, behavioral guidelines, and factory chain context for AI assistants working on the measure-ai-proficiency project.
+This file defines the shared context for agents working on `pskoett-agent-factory`.
+
+This repository is a **template source** for a GitHub agent factory. It is not the installed runtime layout. The canonical template files live here and are copied into a target repository by `install.sh`.
+
+## Repository Purpose
+
+This repo packages a tested agent-factory pattern built on [GitHub Agentic Workflows (gh-aw)](https://github.github.com/gh-aw/).
+
+The tested flow is:
+
+1. Triage the issue.
+2. Refine a spec into a plan PR.
+3. Merge the plan PR.
+4. Activate the source issue directly.
+5. Dispatch the source issue to an implementer.
+6. Review the implementation PR.
+7. Learn from failures and harden the system.
+
+The source issue is the unit of work end-to-end. There is no `/plan` fan-out and no sub-issue layer.
+
+## Source Layout
+
+When editing this repository, use these paths:
+
+- `workflows/*.md`: custom gh-aw workflow sources
+- `workflow-support/*.yml`: plain GitHub Actions support workflows
+- `skills/*/SKILL.md`: skill sources copied into `.claude/skills/` in installed repos
+- `scripts/check-workflow-lock-sync.sh`: helper used by the lock-sync workflow
+- `install.sh`: installs the factory into a target repository
+- `README.md`, `docs/AGENT_FACTORY.md`, `docs/chain.md`: operator-facing documentation
+- `CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`: harness files updated by the learning loop
 
 ## Agent Roles
 
-### Code Implementer
+### Workflow Maintainer
 
-**Purpose:** Implement features, fix bugs, and maintain the codebase.
-
-**Key behaviors:**
-- Follow pure Python conventions (no external dependencies for core functionality)
-- Use type hints on all functions and methods
-- Use dataclasses for data structures
-- Maintain backwards compatibility with Python 3.9+
-- Run `pytest tests/ -v` before committing changes
-
-**Files to modify:**
-- `measure_ai_proficiency/scanner.py` - Core scanning logic
-- `measure_ai_proficiency/config.py` - Level definitions and patterns
-- `measure_ai_proficiency/reporter.py` - Output formatting
-- `measure_ai_proficiency/repo_config.py` - Configuration handling
-- `measure_ai_proficiency/github_scanner.py` - GitHub CLI integration
-
-### Documentation Writer
-
-**Purpose:** Keep documentation accurate and helpful.
+**Purpose:** Maintain and improve the factory flow itself.
 
 **Key behaviors:**
-- Update README.md when features change
-- Keep docs/CUSTOMIZATION.md current with config options
-- Sync skill files across all locations when updating:
-  - `.claude/skills/*/SKILL.md`
-  - `.github/skills/*/SKILL.md`
-  - `skill-template/*/SKILL.md`
-- Update `.ai-proficiency.yaml.example` when adding config options
+- Keep workflow behavior, installer behavior, and documentation aligned.
+- Prefer simple, debuggable state transitions over clever choreography.
+- Do not document automation the factory cannot actually complete.
+- When adding workflow labels, update `install.sh`.
 
-**Constraints:**
-- Never add features to docs that don't exist in code
-- Always include examples with documentation
-- Keep the example output in README.md current
+### Skill Maintainer
 
-### Skill Developer
-
-**Purpose:** Create and maintain agent skills for this tool.
+**Purpose:** Maintain the reusable skills that the workflows depend on.
 
 **Key behaviors:**
-- Skills should be self-contained and follow the Agent Skills standard
-- Include clear triggers and workflow steps
-- Test skills work with both Claude Code and GitHub Copilot
-- Sync skills to all three locations after changes
-
-**Available skills:**
-- `measure-ai-proficiency` - Run assessments
-- `customize-measurement` - Configure for specific repos
-- `plan-interview` - Interview-based planning
-- `agentic-workflow` - GitHub agentic workflow creation
-- `self-improvement` - Learning capture and prevention rule promotion
-- `dx-data-navigator` - DX Data Cloud queries for DORA metrics
-- `intent-framed-agent` - Intent contract to prevent scope drift
-- `context-surfing` - Context window health monitoring
+- Keep skills self-contained and explicit.
+- Prefer instructions that survive single-shot gh-aw runs.
+- If a workflow references a skill, ensure the source exists under `skills/`.
+- Update docs when a skill changes the flow semantics.
 
 ### Reviewer
 
-**Purpose:** Review changes for quality and consistency.
+**Purpose:** Review changes for correctness and internal consistency.
 
 **Key behaviors:**
-- Verify type hints are present
-- Check for backwards compatibility
-- Ensure tests pass
-- Validate documentation is updated
-- Check skill files are synced across locations
+- Check that docs, workflows, support workflows, and installer match.
+- Check that plan naming and handoff semantics remain consistent.
+- Check that labels and copied files in `install.sh` cover the changed workflow set.
+- Check that obsolete flow references do not remain in docs or prompts.
 
-## Behavioral Guidelines
+## Core Rules
 
-### All Agents
+1. **Do not reintroduce `/plan` or sub-issue routing.**
+2. **Do not reintroduce sequential plan numbering.**
+3. **Plan PRs must reference the source issue with `Refs #N`, not a closing keyword.**
+4. **Only `impl:copilot` auto-routes today.** `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` are manual hand-off labels.
+5. **Keep the harness files aligned.** When a durable rule changes, update `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
+6. **Keep the installer aligned with the file layout.** If you add or rename workflows, support files, scripts, or labels, update `install.sh`.
+7. **Keep the docs aligned with the actual flow.** At minimum, update `README.md`, `docs/AGENT_FACTORY.md`, and `docs/chain.md` together when the flow changes.
 
-1. **Test before committing:** Always run `pytest tests/ -v`
-2. **Keep skills synced:** Changes to skills must be copied to all three locations
-3. **Update version:** Bump version in `pyproject.toml` for releases
-4. **Document config options:** New options go in:
-   - `repo_config.py` (implementation)
-   - `docs/CUSTOMIZATION.md` (documentation)
-   - `.ai-proficiency.yaml.example` (example)
-   - Skills that use the option
+## Skills
 
-### Exit Codes
+The canonical skill sources in this repository live under `skills/`. In an installed target repo, `install.sh` copies them into `.claude/skills/`.
 
-Maintain these exit codes:
-- `0` - Success
-- `1` - No repositories found
-- `2` - All repositories at Level 1 (no AI context)
+Available skills in this source repo:
 
-### Scoring System
+- `skills/plan-interview/`: structured requirements interview before planning
+- `skills/self-improvement/`: learning capture and promotion rules
+- `skills/intent-framed-agent/`: intent framing and drift checks
+- `skills/context-surfing/`: context hygiene discipline
+- `skills/simplify-and-harden/`: post-completion quality and security sweep
+- `skills/verify-gate/`: verification discipline before completion
+- `skills/eval-creator/`: regression checks derived from promoted learnings
+- `skills/learning-aggregator/`: cross-session pattern analysis
+- `skills/pre-flight-check/`: session-start scan of relevant learnings and eval status
 
-When modifying scoring:
-- Minimum scores per level: L2=15, L3=30, L4=45, L5=55, L6=70, L7=85, L8=95
-- Validation penalty: max -4 points
-- Cross-reference bonus: max +5 points
-- Quality bonus: max +5 points
+When a workflow tells you to use a skill, read the installed path it will use in the target repo, usually `.claude/skills/<name>/SKILL.md`. When working on this source repo, edit the canonical file under `skills/<name>/SKILL.md`.
 
-### Pattern Detection
+## Adapting Skills For gh-aw
 
-When adding new patterns:
-- Add to appropriate level in `config.py`
-- Consider tool-specific filtering (Claude, Copilot, Cursor, Codex)
-- Update KNOWN_TARGETS if it's an instruction file
-- Add to INSTRUCTION_FILES if it should be scanned for cross-references
+gh-aw runs are single-shot and ephemeral. When a skill assumes interactivity or cross-turn memory, adapt it explicitly:
 
-## Handoffs
+1. **Interview-style skills:** answer from issue and repo context when possible. Mark any unresolved point with `**NEEDS HUMAN INPUT**`.
+2. **Hook-based skills:** apply their checks at natural boundaries such as after planning, after major tool calls, and before exit.
+3. **Session-state skills:** run them as manual self-checks because gh-aw cannot preserve live session state.
+4. **Script-bundled skills:** allowlist any required commands in the workflow frontmatter.
 
-### Implementation to Documentation
-After implementing a feature, hand off to documentation:
-- Describe what was added/changed
-- Note any new config options
-- List affected files
+## Writing Style
 
-### Documentation to Skills
-After updating documentation, update skills:
-- measure-ai-proficiency skill for assessment features
-- customize-measurement skill for config options
+These rules apply to agent-authored comments, issues, PR bodies, and commit messages in this repository:
 
----
+- No em-dashes or double dashes.
+- No throat-clearing openings.
+- Short declarative sentences.
+- State the answer first.
+- Prefer concrete evidence over generalization.
 
-## Agent Factory: Shared Context
+## Plan Files
 
-The sections below are read by every agentic workflow in the factory chain. The factory consists of 10 workflows organized in three tiers:
+Plans live in `docs/plans/plan-NNN-<slug>.md`.
 
-**Factory chain** (custom, skill-backed): `spec-refiner`, `reviewer`, `self-improvement-meta`, `ci-cleaner`, `contribution-checker`
-**Support workflows** (from githubnext/agentics): `issue-triage`, `plan`, `pr-fix`
-**Project-specific**: `ai-proficiency-pr-review`, `ai-proficiency-weekly-report`
+`NNN` is the **source issue number**, zero-padded to at least three digits:
 
-See `docs/AGENT_FACTORY.md` for the full guide with step-by-step usage instructions, label reference, and debugging commands.
+- issue `#7` -> `plan-007-...`
+- issue `#61` -> `plan-061-...`
+- issue `#1042` -> `plan-1042-...`
 
-### Core principles
+Do not scan `docs/plans/` for the next sequential number.
 
-1. **Move forward, fail fast, fail forward.** Do not stall on ambiguity. Make the best decision with the information available, document the assumption, and keep moving.
-2. **Knowledge is for sharing.** When you learn something non-obvious, write it down in `.learnings/` so the next agent does not repeat the mistake.
-3. **Skills are the new software.** Treat instructions as code. Version them, review them, improve them over time.
-4. **Harness engineering is the differentiator.** The prompt is never the bottleneck. The structure around the prompt is.
+## Learnings
 
-### Skill discovery
+Learnings live in `.learnings/LEARNINGS.md` and follow this structure:
 
-This repository contains reusable agent skills in `.claude/skills/`. Every skill follows the [Agent Skills specification](https://agentskills.io/specification):
-
-```
-.claude/skills/
-  skill-name/
-    SKILL.md         # Instructions + YAML frontmatter
-    scripts/         # Optional executable code
-    references/      # Optional reference material loaded on demand
-    assets/          # Optional templates and data files
-```
-
-When a workflow tells you to use a skill, read `.claude/skills/<skill-name>/SKILL.md` in full and follow its process. If the skill references additional files in `references/` or `assets/`, read those on demand as the skill instructs.
-
-Currently available skills:
-- `.claude/skills/plan-interview/`: structured requirements interview before planning
-- `.claude/skills/self-improvement/`: learning capture and prevention rule promotion
-- `.claude/skills/dx-data-navigator/`: DX Data Cloud queries for DORA metrics and PR analytics
-- `.claude/skills/intent-framed-agent/`: explicit intent contract to prevent scope drift
-- `.claude/skills/context-surfing/`: context window health monitoring with clean exits
-- `.claude/skills/measure-ai-proficiency/`: run AI proficiency assessments
-- `.claude/skills/customize-measurement/`: configure measurement for specific repos
-- `.claude/skills/agentic-workflow/`: GitHub agentic workflow creation
-
-### Adapting skills for single-shot gh-aw runs
-
-The skills in `.claude/skills/` were originally written for live agent sessions with Claude Code, Codex CLI, or GitHub Copilot CLI. gh-aw runs are single-shot and ephemeral. When a skill assumes interactivity or cross-turn state that gh-aw cannot provide, follow these rules:
-
-1. **Interview-style skills**: When a skill expects to ask the user questions, simulate the interview by answering from available context (issue body, linked PRs, repo files). Mark any answer you cannot give with confidence using `**NEEDS HUMAN INPUT**` and a specific question, then route to `blocked-on-human` via labels.
-2. **Hook-based skills**: gh-aw has no PostToolUse or UserPromptSubmit hooks. When a skill expects hook activation, apply its logic at natural phase boundaries in your run (after planning, after major tool calls, before exit).
-3. **Session-state skills**: Skills that monitor context window health or track state across turns cannot observe gh-aw runs directly. Apply their discipline as self-checks: read the skill, enumerate its checks, and run each one manually before committing output.
-4. **Script-bundled skills**: If a skill has scripts in `scripts/`, those scripts must be explicitly allowlisted in the workflow frontmatter's `bash: allowed:` block. Instruction-only skills work everywhere with no configuration.
-
-### Writing style for all agent-authored content
-
-These rules apply to every comment, issue body, PR description, and commit message you produce.
-
-- Never use em-dashes or double dashes. Use commas, colons, or periods.
-- No "most teams" generalizations.
-- No throat-clearing opening sentences. Lead with the answer.
-- Short sentences. Strong declarative statements.
-- If you quote data, link to the source.
-
-### Spec and plan files
-
-Plans live in `docs/plans/plan-NNN-<slug>.md` where NNN is a three-digit zero-padded sequence. The format is defined in `.claude/skills/plan-interview/SKILL.md`. Downstream agents use these files as the source of truth for implementation and review.
-
-### Learnings
-
-Learnings live in `.learnings/LEARNINGS.md` and follow this format:
-
-```
+```markdown
 ## [LRN-NNN] Short title
 
 **Status**: pending | promoted_to_skill | regressed
@@ -213,86 +149,59 @@ Learnings live in `.learnings/LEARNINGS.md` and follow this format:
 - LRN-XXX
 ```
 
-Never log secrets, tokens, private keys, or full source files. Prefer short summaries over raw output. The full specification of this format lives in `.claude/skills/self-improvement/SKILL.md`.
+Never log secrets or raw confidential output. Prefer short summaries over pasted logs.
 
-#### Promotion targets
+When a learning is promoted, write it to:
 
-When a learning is promoted (high priority, recurrent pattern, broadly applicable), it must be written to **all three harness files** so every agent runtime benefits:
+1. `AGENTS.md`
+2. `CLAUDE.md`
+3. `.github/copilot-instructions.md`
 
-1. **`AGENTS.md`**: read by gh-aw workflows and GitHub Copilot agents at run start
-2. **`.github/copilot-instructions.md`**: read by GitHub Copilot in IDE and cloud coding agent
-3. **`CLAUDE.md`**: read by Claude Code at session start
+Add it to a workflow body too when the rule is workflow-specific.
 
-If the rule is workflow-specific (only applies to one workflow), also add it to that workflow's `.md` file body. Generic rules go in the harness files only.
+## Routing Guidance
 
-### Agent routing guidelines
+The factory retains multiple implementer labels, but platform reality matters more than theory.
 
-As of April 2026, GitHub offers three cloud coding agents, all bundled with the Copilot subscription: Copilot cloud agent, Claude (Sonnet 4.5/4.6, Opus 4.5/4.6), and Codex (GPT-5.2/5.3/5.4-Codex). Model selection happens when a task is kicked off on github.com. For workflows in this pack, `spec-refiner` recommends an implementer in the plan file, and a human confirms the assignment via the web UI.
+### Auto-routable
 
-Use these rules when recommending or choosing an implementer:
+**Copilot cloud agent**
+- Only auto-routable implementer in this factory
+- Selected via `impl:copilot`
+- Dispatched by `implementer-dispatcher`
 
-**Claude Opus 4.6**: default for complex, multi-file, or architecturally risky work
-- Multi-file refactors touching more than three modules
-- Plan files with `Blast radius: high`
-- Anything with a non-trivial rollback path
-- Plan files with more than six items in the implementation checklist
-- Work that needs precise spec adherence because drift would matter
+### Manual labels
 
-**Claude Sonnet 4.6**: default for straightforward single-component features
-- Single-module feature additions with clear scope
-- New API endpoints with existing patterns to follow
-- Plan files with `Blast radius: medium`
-- Bug fixes that require moderate investigation
-- Anything where Opus would be overkill but you still want Claude's reasoning
+**Claude Opus 4.6**
+- Use when a human wants to hand off a complex task manually
 
-**Copilot cloud agent**: default for trivial or highly-constrained work
-- Dependency version bumps
-- Obvious one-line fixes where the fix is already in the issue body
-- Config file updates
-- Repetitive mechanical changes across many files
-- Plan files with `Blast radius: low` and a checklist under three items
+**Claude Sonnet 4.6**
+- Use when a human wants a lighter Claude hand-off manually
 
-**Codex (GPT-5.4)**: opportunistic use for specific strengths
-- Tasks that benefit from a different reasoning style as a sanity check on Claude
-- When the team wants A/B data on agent quality
+**Codex GPT-5.4**
+- Use when a human wants a manual Codex hand-off or A/B comparison
 
-#### Why Claude is the default for non-trivial work
+`spec-refiner` recommends `copilot` by default because it is the only route the factory can complete automatically.
 
-The skills in `.claude/skills/` were originally designed for Claude Code. Running them on their native runtime gives better fidelity than any translation layer. The `plan-interview` structure, the intent framing discipline, the simplify-and-harden pass: all of it was tuned against Claude's reasoning patterns.
+## Workflow Inventory
 
-#### How the recommendation gets made
+| Workflow | Trigger | Notes |
+|----------|---------|-------|
+| `spec-refiner` | Issue labeled `needs-spec` | creates plan PR and applies `impl:copilot` |
+| `plan-merged-dispatcher` | Merged plan PR | plain Actions workflow, activates source issue |
+| `implementer-dispatcher` | Issue labeled `ready-for-implementation` | auto-assigns only `impl:copilot` |
+| `reviewer` | PR opened or updated | plan-aware review with implementer calibration |
+| `conflict-resolver` | PR labeled `needs-rebase` | merges `origin/main` into the PR branch when clean |
+| `contribution-checker` | PR opened or updated | checks repo process alignment |
+| `simplify-and-harden-ci` | PR opened or updated | scan-only quality and security pass |
+| `eval-creator-ci` | PR opened or updated | advisory regression checks |
+| `ci-cleaner` | CI failure on `main` | fixes failing mainline CI |
+| `self-improvement-meta` | nightly | extracts learnings and promotes durable rules |
+| `learning-aggregator-ci` | weekly | groups learnings and ranks gaps |
+| `issue-triage` | issue opened or reopened | issue intake and initial labeling |
+| `pr-fix` | `/pr-fix` comment | on-demand PR repair |
+| `lock-file-sync` | PR touches workflow sources or lock files | plain Actions guard for stale lock files |
 
-`spec-refiner` adds a `## Recommended implementer` section to every plan file and adds the corresponding `impl:*` label to the parent issue (e.g., `impl:claude-opus`). The human reviews the plan PR and can swap the label if they disagree. When `/plan` creates sub-issues, the `implementer-dispatcher` workflow reads the `impl:*` label from the parent issue and auto-assigns each sub-issue to the chosen agent. One decision at the plan level, zero manual assignment per sub-issue.
+## Human Circuit Breaker
 
-#### A note on gh-aw engine selection
-
-The routing rules above are about the **implementer step** (who writes the code from a sub-issue). The gh-aw engine that runs the workflows in this pack (`spec-refiner`, `reviewer`, `self-improvement-meta`) is a separate choice in each workflow's frontmatter. All workflows here currently use Copilot as the engine because it is bundled with the existing `COPILOT_GITHUB_TOKEN` secret. When gh-aw supports running the Claude engine through the same bundled subscription (expected soon based on the April 2026 changelog), flipping these workflows to `engine: claude` will be a one-line change per workflow.
-
-### Tooling available to agents in this repo
-
-- GitHub toolset (read-only by default, write via safe-outputs only)
-- `cache-memory` and `repo-memory` for cross-run state
-- `bash: true` for shell commands (ci-cleaner, pr-fix)
-- `edit:` for file modifications (ci-cleaner, pr-fix)
-- `web-fetch:` for external content (issue-triage, pr-fix)
-- DX Data Cloud MCP server (configured per workflow that needs it, optional for PoC). Reviewer agents should use this for context when available.
-
-### Workflow inventory
-
-| Workflow | Trigger | Safe outputs | Skill |
-|----------|---------|-------------|-------|
-| `spec-refiner` | Issue labeled `needs-spec` | update-issue, add-comment, create-pull-request, add-labels, remove-labels | plan-interview |
-| `implementer-dispatcher` | Sub-issue labeled `ready-for-implementation` | assign-to-agent, add-comment, add-labels | (none, reads parent issue labels) |
-| `reviewer` | PR opened / updated | add-comment, add-labels | dx-data-navigator, intent-framed-agent |
-| `self-improvement-meta` | Nightly (~2am) | create-pull-request, create-issue | self-improvement |
-| `ci-cleaner` | CI failure on main | create-pull-request | (none, uses bash/edit directly) |
-| `contribution-checker` | PR opened / updated | add-comment | (none, reads CONTRIBUTING.md) |
-| `issue-triage` | Issue opened / reopened | add-labels, add-comment | (none, githubnext/agentics) |
-| `plan` | `/plan` slash command | create-issue | (none, githubnext/agentics) |
-| `pr-fix` | `/pr-fix` slash command | push-to-pull-request-branch, add-comment, create-issue | (none, githubnext/agentics) |
-| `ai-proficiency-pr-review` | PR opened / `/assess-proficiency` | add-comment | measure-ai-proficiency |
-| `ai-proficiency-weekly-report` | Weekly (Monday 9am) | create-issue | measure-ai-proficiency |
-
-### Human circuit breaker
-
-Any workflow can be halted by adding the `human-review` label to the issue or PR it is operating on. When you see this label, call `noop` immediately and explain what you would have done.
+Any workflow can be halted by adding the `human-review` label to the issue or PR it is operating on. When you see that label, call `noop` immediately and explain what would have happened otherwise.

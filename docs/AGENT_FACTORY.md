@@ -1,237 +1,213 @@
-# Agent Factory: End-to-End Agentic Workflows
+# Agent Factory
 
-A complete **triage, spec, plan, implement, review, fix, learn** agent factory powered by [GitHub Agentic Workflows (gh-aw)](https://github.github.com/gh-aw/). Ten workflows chain together through GitHub events (labels, PRs, comments). No orchestrator, no DAG. Each agent does one job, hands off via a label swap, and the next agent picks it up. This is choreography, not orchestration.
+This repository packages the agent factory pattern that was tested in `measuring-ai-proficiency` and distilled into a reusable template.
 
-## The Complete Chain
+The important update is structural: the source issue is the unit of work end-to-end. The factory no longer depends on `/plan` creating sub-issues.
 
-```
+## End-To-End Chain
+
+```text
 issue opened
   |
   v
-issue-triage (auto-labels by type, detects spam)
+issue-triage
   |
   v
-human adds "needs-spec" label
+human adds "needs-spec"
   |
   v
-spec-refiner (plan file + implementer label on issue)
+spec-refiner
   |
   v
-human reviews plan PR, optionally swaps implementer label  <-- ONE decision
+human reviews and merges the plan PR
   |
   v
-/plan (breaks plan into sub-issues)
+plan-merged-dispatcher
   |
   v
-implementer-dispatcher (auto-assigns sub-issues from parent label)
+implementer-dispatcher
   |
   v
 PR opened
   |
-  +---> reviewer (plan-aware code review with implementer calibration)
-  +---> contribution-checker (CONTRIBUTING.md compliance)
+  +---> reviewer
+  +---> contribution-checker
+  +---> simplify-and-harden-ci
+  +---> eval-creator-ci
+  |
+  +---> conflict-resolver when labeled needs-rebase
   |
   v
-needs-changes? ---> /pr-fix (auto-fix CI failures)
-  |
-  v
-CI failure on main? ---> ci-cleaner (lint, test, compile fix loop)
-  |
-  v
-nightly ---> self-improvement-meta (extract learnings, commit guardrails)
+pr-fix / ci-cleaner / self-improvement-meta
 ```
 
-State lives in GitHub, not in memory. Each agent starts cold. Every handoff is mediated by a file, a label, or a PR. This makes the chain debuggable: you can inspect the state at any point by looking at the repo.
+## Why The Flow Changed
+
+The older flow used `/plan` plus sub-issues. In practice that introduced avoidable failure modes:
+
+- source issues could be closed accidentally by plan PRs
+- sequential plan numbering raced under parallel use
+- parent-issue discovery was fragile
+- auto-routing implied capabilities the platform did not actually provide
+
+The current flow fixes those problems:
+
+- plan filenames derive from the source issue number
+- plan PRs reference the source issue with `Refs #N`, not `Fixes #N`
+- merged plans write their checklist back onto the source issue body
+- the source issue itself gets `ready-for-implementation`
+- only `impl:copilot` is auto-routed
+
+## Repository Structure
+
+This repo is the template source. The installed repo layout is different.
+
+Template source here:
+
+- [`../workflows`](../workflows) for custom gh-aw Markdown workflows
+- [`../workflow-support`](../workflow-support) for plain GitHub Actions support workflows
+- [`../skills`](../skills) for vendored skill sources
+- [`../install.sh`](../install.sh) for installation into a target repo
+
+Installed target repo:
+
+- `.github/workflows/*.md` and matching `.lock.yml`
+- `.github/workflows/plan-merged-dispatcher.yml`
+- `.github/workflows/lock-file-sync.yml`
+- `.claude/skills/*/SKILL.md`
+- `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`
 
 ## Prerequisites
 
+### Local tooling
+
 - [GitHub CLI](https://cli.github.com/) installed and authenticated
 - [gh-aw extension](https://github.com/github/gh-aw): `gh extension install github/gh-aw`
-- A `COPILOT_GITHUB_TOKEN` secret in the repo (for gh-aw agent runtime)
-- Copilot cloud agent enabled on the repo (Settings > Copilot > Cloud agent)
-- Optional: `DX_MCP_TOKEN` secret if using DX Data Cloud integration in the reviewer
+- Git 2.40+
 
-## Quick Start: Your First Run
+### Repository settings
 
-### Step 1: Open an Issue
+Apply these in the target repository:
 
-Create a new issue describing a feature, bug fix, or refactor. Keep it concrete: what should change, why, and any constraints you know about.
+| Setting | Value | Why |
+|---------|-------|-----|
+| Workflow permissions | Read and write permissions | Workflows need to open PRs, edit issues, and move labels |
+| Allow PR creation | Enabled | `ci-cleaner` and `self-improvement-meta` open PRs |
+| Copilot cloud agent | Enabled | Required for `impl:copilot` routing |
+| Copilot code review | Enabled | Useful for inline review on PRs |
+| Actions permissions | Allow all actions and reusable workflows | Needed for the full factory chain |
 
-The `issue-triage` workflow fires automatically on new issues. It reads the content, selects appropriate labels (bug, enhancement, question, documentation), detects spam, and posts analysis notes with debugging strategies and context from similar issues.
+### Secrets
 
-### Step 2: Label for Spec Refinement
+Set these in the target repository when you install the factory:
 
-After triage, add the `needs-spec` label to start the factory chain.
-
-The `spec-refiner` workflow triggers. It reads the issue, runs the `plan-interview` skill, and produces:
-- A plan file at `docs/plans/plan-NNN-<slug>.md` (opened as a PR)
-- A recommended implementer (Claude Opus 4.6, Claude Sonnet 4.6, Copilot, or Codex)
-- An implementer label on the issue (`impl:claude-opus`, `impl:claude-sonnet`, `impl:copilot`, or `impl:codex`)
-- A label swap: `needs-spec` removed, `needs-plan` added
-
-If the agent cannot answer something from context alone, it marks the gap with **NEEDS HUMAN INPUT** and adds the `blocked-on-human` label. Add a comment with the missing context, remove the label, and re-trigger.
-
-### Step 3: Review the Plan and Choose an Implementer
-
-Read the plan PR. Check the success criteria, the implementation checklist, and the recommended implementer.
-
-The spec-refiner already added an implementer label (e.g., `impl:claude-opus`) to the issue based on its complexity assessment. If you disagree with the recommendation, swap the label before proceeding:
-
-| Label | Agent | When to use |
-|-------|-------|-------------|
-| `impl:claude-opus` | Claude Opus 4.6 | Multi-file refactors, high blast radius, 6+ checklist items |
-| `impl:claude-sonnet` | Claude Sonnet 4.6 | Single-component features, medium complexity |
-| `impl:copilot` | Copilot | Trivial fixes, dependency bumps, config changes |
-| `impl:codex` | Codex GPT-5.4 | A/B comparison, different reasoning style |
-
-Merge the plan PR. The `needs-plan` label triggers the `/plan` workflow, which breaks the plan into sub-issues labeled `ready-for-implementation`.
-
-### Step 4: Auto-Assignment (No Manual Work)
-
-The `implementer-dispatcher` workflow triggers automatically when sub-issues receive the `ready-for-implementation` label. It reads the implementer label from the parent issue and assigns each sub-issue to the chosen agent via `assign-to-agent`.
-
-You assigned once at Step 3. Every sub-issue inherits that choice. No manual assignment needed.
-
-The agent opens a PR with its implementation.
-
-### Step 5: Automated Review
-
-Two workflows trigger on the new PR:
-
-**Reviewer** checks the PR against the plan file:
-1. Finds the plan and checks every success criterion: Met, Partial, Missed, or Drifted
-2. Detects the implementer and applies calibration:
-   - Claude PRs: checked for scope drift (tends to over-implement)
-   - Copilot PRs: checked for test coverage gaps (tends to under-test)
-   - Codex PRs: checked for correctness on unusual control flow
-   - Human PRs: standard rigor
-3. Pulls team baseline from DX Data Cloud (if configured) for context
-4. Posts a structured review comment with a verdict: `ai-reviewed`, `needs-changes`, or `fast-track`
-
-**Contribution checker** evaluates the PR against `docs/CONTRIBUTING.md`: on-topic, focused, has tests, has description, skills synced.
-
-### Step 6: Fix Loop
-
-If the reviewer labels the PR `needs-changes`, comment `/pr-fix` to trigger the automated fix workflow. It analyzes failing CI checks, identifies root causes from error logs, implements fixes, and pushes corrections to the PR branch.
-
-If CI fails on `main` after a merge, the `ci-cleaner` workflow triggers automatically. It runs `ruff check --fix`, `pytest`, and `gh aw compile` in sequence, then opens a PR with the fixes. It includes a mandatory exit protocol (always produces a PR or noop) and a file-count guard (refuses to create PRs with 50+ changed files).
-
-### Step 7: The Outer Loop (Nightly)
-
-`self-improvement-meta` runs every night around 2am. It:
-
-1. Reads the last 24 hours of workflow run logs
-2. Extracts failure patterns and categorizes them (prompt, tool, context, data)
-3. Deduplicates against existing entries in `.learnings/LEARNINGS.md`
-4. Opens a PR that adds prevention rules to `AGENTS.md` or the relevant workflow file
-
-When you merge that PR, the next run of the affected agent reads the updated instructions. The factory gets smarter every day. If there are no failures, it calls noop. Silence is the correct signal when the factory is healthy.
-
-## Controlling the Chain
-
-| Action | How |
+| Secret | Why |
 |--------|-----|
-| **Pause any step** | Add the `human-review` label. All agents check for it and call noop. |
-| **Skip spec-refinement** | Label the issue `needs-plan` directly instead of `needs-spec` |
-| **Skip automated review** | Label the PR `human-review` and review it yourself |
-| **Trigger manually** | Every workflow has `workflow_dispatch` enabled. Run from the Actions tab. |
-| **Fix a failing PR** | Comment `/pr-fix` on the PR |
-| **Break a plan into tasks** | Comment `/plan` on the issue |
-| **Fast-forward simple changes** | For trivial fixes, skip the whole chain: just open a PR directly |
+| `COPILOT_GITHUB_TOKEN` | gh-aw runtime auth |
+| `GH_AW_GITHUB_TOKEN` | checkout and label writes |
+| `GH_AW_GITHUB_MCP_SERVER_TOKEN` | GitHub MCP server auth |
+| `GH_AW_AGENT_TOKEN` | issue assignment for the Copilot cloud agent |
+| `GH_AW_CI_TRIGGER_TOKEN` | lets follow-up workflows trigger other workflows when needed |
 
-## All Workflows
+## Installation
 
-### Factory Chain (custom, skill-backed)
+From the target repository:
 
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| [`spec-refiner.md`](../workflows/spec-refiner.md) | Issue labeled `needs-spec` | Structured plan file from issue context using plan-interview skill |
-| [`reviewer.md`](../workflows/reviewer.md) | PR opened / updated | Plan-aware code review with implementer calibration |
-| [`self-improvement-meta.md`](../workflows/self-improvement-meta.md) | Nightly (~2am) | Extract learnings from failures, commit prevention rules |
-| [`implementer-dispatcher.md`](../workflows/implementer-dispatcher.md) | Sub-issue labeled `ready-for-implementation` | Auto-assign to agent based on parent issue's implementer label |
-| [`ci-cleaner.md`](../workflows/ci-cleaner.md) | CI failure on main | Auto-fix lint, test, and compilation issues |
-| [`contribution-checker.md`](../workflows/contribution-checker.md) | PR opened / updated | Evaluate PR against CONTRIBUTING.md guidelines |
+```bash
+git clone https://github.com/pskoett/pskoett-agent-factory.git /tmp/pskoett-agent-factory
+/tmp/pskoett-agent-factory/install.sh
+```
 
-These are thin adapter shells. The actual agent logic lives in skills in `.claude/skills/`.
+The installer copies all workflow sources, support workflows, skills, harness files, and helper scripts. It also creates the labels and runs `gh aw compile`.
 
-### Support Workflows (from githubnext/agentics)
+## First Run
 
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| [`issue-triage.md`](../workflows/issue-triage.md) | Issue opened / reopened | Label, categorize, detect spam, provide analysis notes |
-| [`plan.md`](../workflows/plan.md) | `/plan` slash command | Break plan into sub-issues labeled `ready-for-implementation` |
-| [`pr-fix.md`](../workflows/pr-fix.md) | `/pr-fix` slash command | Analyze failing CI, implement fixes, push to PR branch |
-
-Installed via `gh aw add githubnext/agentics/<name>`. These are general-purpose and work out of the box.
-
-## Skills Used by the Factory
-
-| Skill | Used by | Purpose |
-|-------|---------|---------|
-| [`plan-interview`](../skills/plan-interview/SKILL.md) | spec-refiner | Structured requirements interview before planning |
-| [`self-improvement`](../skills/self-improvement/SKILL.md) | self-improvement-meta | Learning capture, categorization, and promotion |
-| [`dx-data-navigator`](../skills/dx-data-navigator/SKILL.md) | reviewer | DORA metrics from DX Data Cloud (optional) |
-| [`intent-framed-agent`](../skills/intent-framed-agent/SKILL.md) | reviewer | Scope drift detection against plan intent |
-| [`context-surfing`](../skills/context-surfing/SKILL.md) | (available) | Context window health monitoring |
-
-Skills live in `.claude/skills/` and work identically in Claude Code, Codex CLI, and gh-aw. Update a skill once, every consumer gets the fix. The gh-aw workflows read skill files at runtime, not at compile time.
-
-## Label Reference
-
-| Label | Meaning | Set by |
-|-------|---------|--------|
-| `needs-spec` | Issue needs a structured plan file | Human |
-| `needs-plan` | Spec is ready, /plan creates sub-issues | spec-refiner |
-| `blocked-on-human` | Agent needs human input before proceeding | spec-refiner |
-| `spec-refined` | Spec refinement is complete | spec-refiner |
-| `ready-for-implementation` | Sub-issue ready for a coding agent | /plan |
-| `impl:claude-opus` | Assign to Claude Opus 4.6 | spec-refiner (or human) |
-| `impl:claude-sonnet` | Assign to Claude Sonnet 4.6 | spec-refiner (or human) |
-| `impl:copilot` | Assign to Copilot cloud agent | spec-refiner (or human) |
-| `impl:codex` | Assign to Codex GPT-5.4 | spec-refiner (or human) |
-| `assigned-to-agent` | Sub-issue has been dispatched | implementer-dispatcher |
-| `ai-reviewed` | PR passed automated review, ready for human review | reviewer |
-| `needs-changes` | PR has critical findings or spec drift | reviewer |
-| `fast-track` | Small, well-tested, matches plan, zero findings | reviewer |
-| `spec-drift` | PR does things the plan did not ask for | reviewer |
-| `human-review` | Emergency stop: all agents call noop | Human |
-| `self-improvement` | PR was created by the nightly learning loop | self-improvement-meta |
-| `ci-fix` | PR was created by the CI cleaner | ci-cleaner |
-| `plan-file` | PR contains a plan file | spec-refiner |
+1. Open an issue in the target repo.
+2. Add `needs-spec`.
+3. `spec-refiner` opens a plan PR under `docs/plans/plan-NNN-<slug>.md`, where `NNN` is the source issue number.
+4. Review the plan PR.
+5. Merge the plan PR.
+6. `plan-merged-dispatcher` writes the implementation checklist back to the source issue body and adds `ready-for-implementation`.
+7. `implementer-dispatcher` auto-assigns the source issue if it carries `impl:copilot`.
+8. The coding agent opens a PR.
+9. Review workflows annotate that PR.
 
 ## Implementer Routing
 
-The full routing rules live in `AGENTS.md` under "Agent routing guidelines". Summary:
+The factory keeps the old labels, but not all of them can be auto-routed.
 
-- **Claude Opus 4.6**: complex, multi-file, architecturally risky. More than three modules, high blast radius, non-trivial rollback.
-- **Claude Sonnet 4.6**: straightforward single-component features. Clear scope, existing patterns, medium blast radius.
-- **Copilot cloud agent**: trivial or highly constrained. Dependency bumps, one-line fixes, config changes.
-- **Codex GPT-5.4**: opportunistic. Different reasoning style as a sanity check, A/B data on agent quality.
+| Label | Auto-assigned | Meaning |
+|-------|---------------|---------|
+| `impl:copilot` | Yes | Auto-assign the source issue to the Copilot cloud agent |
+| `impl:claude-opus` | No | Manual hand-off outside the factory |
+| `impl:claude-sonnet` | No | Manual hand-off outside the factory |
+| `impl:codex` | No | Manual hand-off outside the factory |
 
-The spec-refiner recommends. The human decides. The reviewer calibrates based on who actually produced the code.
+`spec-refiner` always applies `impl:copilot` by default because that is the only route the factory can actually complete without human intervention.
 
-## Debugging
+## Workflow Inventory
 
-```bash
-# Check workflow status
-gh aw status
+Custom gh-aw workflow sources in this repo:
 
-# View logs for a specific workflow
-gh aw logs spec-refiner
+| Workflow | File | Trigger |
+|----------|------|---------|
+| `spec-refiner` | [`../workflows/spec-refiner.md`](../workflows/spec-refiner.md) | Issue labeled `needs-spec` |
+| `implementer-dispatcher` | [`../workflows/implementer-dispatcher.md`](../workflows/implementer-dispatcher.md) | Issue labeled `ready-for-implementation` |
+| `reviewer` | [`../workflows/reviewer.md`](../workflows/reviewer.md) | PR opened or updated |
+| `conflict-resolver` | [`../workflows/conflict-resolver.md`](../workflows/conflict-resolver.md) | PR labeled `needs-rebase` |
+| `contribution-checker` | [`../workflows/contribution-checker.md`](../workflows/contribution-checker.md) | PR opened or updated |
+| `ci-cleaner` | [`../workflows/ci-cleaner.md`](../workflows/ci-cleaner.md) | CI failure on `main` |
+| `self-improvement-meta` | [`../workflows/self-improvement-meta.md`](../workflows/self-improvement-meta.md) | Nightly |
+| `simplify-and-harden-ci` | [`../workflows/simplify-and-harden-ci.md`](../workflows/simplify-and-harden-ci.md) | PR opened or updated |
+| `learning-aggregator-ci` | [`../workflows/learning-aggregator-ci.md`](../workflows/learning-aggregator-ci.md) | Weekly |
+| `eval-creator-ci` | [`../workflows/eval-creator-ci.md`](../workflows/eval-creator-ci.md) | PR opened or updated |
+| `issue-triage` | [`../workflows/issue-triage.md`](../workflows/issue-triage.md) | Issue opened or reopened |
+| `pr-fix` | [`../workflows/pr-fix.md`](../workflows/pr-fix.md) | `/pr-fix` comment |
 
-# Audit a failed run
-gh aw audit <run-id>
+Plain GitHub Actions support workflows:
 
-# Recompile after editing a workflow
-gh aw compile <workflow-name>
+| Workflow | File | Trigger |
+|----------|------|---------|
+| `plan-merged-dispatcher` | [`../workflow-support/plan-merged-dispatcher.yml`](../workflow-support/plan-merged-dispatcher.yml) | Merged plan PR touching `docs/plans/plan-*.md` |
+| `lock-file-sync` | [`../workflow-support/lock-file-sync.yml`](../workflow-support/lock-file-sync.yml) | PR touching workflow sources or lock files |
 
-# Recompile all workflows
-gh aw compile
+## Labels
 
-# Remove orphaned lock files
-gh aw compile --purge
-```
+These labels are created by `install.sh` because the workflows rely on them:
 
-## Architecture
+| Label | Purpose |
+|-------|---------|
+| `needs-spec`, `needs-plan`, `spec-refined` | spec refinement handoff |
+| `blocked-on-human` | explicit stop that requires human input |
+| `ready-for-implementation`, `assigned-to-agent` | implementation dispatch |
+| `impl:claude-opus`, `impl:claude-sonnet`, `impl:copilot`, `impl:codex` | implementer routing |
+| `ai-reviewed`, `needs-changes`, `fast-track`, `spec-drift` | review outcomes |
+| `needs-rebase` | triggers conflict resolution |
+| `human-review` | emergency circuit breaker |
+| `plan-file`, `ci-fix`, `self-improvement`, `workflow-health` | factory provenance |
+| `automation`, `low-risk`, `pr-fix` | routine automation labels |
 
-See [`chain.md`](chain.md) for the full layered architecture diagram and the design rationale for choreography over orchestration.
+## Supporting Files
+
+The tested flow depends on two non-gh-aw support pieces:
+
+### `plan-merged-dispatcher.yml`
+
+This is the key structural change. It activates the source issue after plan PR merge by:
+
+1. locating merged plan files
+2. extracting the `## Implementation Checklist` section
+3. writing that checklist into the source issue body inside stable markers
+4. moving `needs-plan` to `ready-for-implementation`
+
+### `lock-file-sync.yml`
+
+This guards the compiled `.lock.yml` files. It exists because stale lock files caused real drift during testing.
+
+The companion helper script is [`../scripts/check-workflow-lock-sync.sh`](../scripts/check-workflow-lock-sync.sh).
+
+## Operator Notes
+
+- If you change any installed `.github/workflows/*.md` file, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
+- If you want to re-dispatch an already assigned issue, remove both `assigned-to-agent` and `ready-for-implementation`, then re-add `ready-for-implementation`.
+- If you want Claude or Codex to implement the issue, swap the `impl:*` label after reviewing the plan PR and hand the issue off manually.

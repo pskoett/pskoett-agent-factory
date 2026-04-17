@@ -2,6 +2,8 @@
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+    paths-ignore:
+      - docs/plans/**
   workflow_dispatch:
 timeout-minutes: 8
 engine:
@@ -50,14 +52,10 @@ Read `.claude/skills/eval-creator/SKILL.md` in full. Follow its verification met
 2. For each eval case file in `.evals/cases/`:
    a. Read the eval case metadata and verification method.
    b. Check preconditions. If not met, mark as `skip`.
-   c. Execute the verification method:
-      - `grep-check`: search target files for pattern, compare to expected (found/not_found)
-      - `command-check`: run the command, check exit code and/or output
-      - `file-check`: verify file or section exists
-      - `rule-check`: read target file, search for expected content
-   d. Record pass/fail/skip.
-3. Do not modify source code. Eval execution is read-only.
-4. Gate policy: `advisory` (report results but do not block merge).
+   c. Execute the verification method.
+   d. Record pass, fail, or skip.
+3. Do not modify source code.
+4. Gate policy is advisory.
 
 ## Output
 
@@ -87,10 +85,11 @@ Post exactly one comment:
 ## Noop
 
 Call `noop` if:
+
 - `.evals/` directory does not exist
 - `EVAL_INDEX.md` is empty or missing
-- No eval cases to run
+- No eval cases exist
 
 ## Style
 
-Follow the writing rules in `AGENTS.md`. Tables. Pass/fail. No hedging.
+Follow the writing rules in `AGENTS.md`. Tables. Pass or fail. No hedging.

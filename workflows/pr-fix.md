@@ -2,9 +2,7 @@
 description: |
   This workflow makes fixes to pull requests on-demand by the '/pr-fix' command.
   Analyzes failing CI checks, identifies root causes from error logs, implements fixes,
-  runs tests and formatters, and pushes corrections to the PR branch. Provides detailed
-  comments explaining changes made. Helps rapidly resolve PR blockers and keep
-  development flowing.
+  runs tests and formatters, and pushes corrections to the PR branch.
 
 on:
   slash_command:
@@ -19,7 +17,7 @@ tools:
   web-fetch:
   bash: true
   github:
-    min-integrity: none # This workflow is allowed to examine any PR because it's invoked by a repo maintainer
+    min-integrity: none
 
 safe-outputs:
   push-to-pull-request-branch:
@@ -30,29 +28,26 @@ safe-outputs:
 
 timeout-minutes: 20
 
+engine:
+  id: copilot
+  model: gpt-5.4
+
 source: githubnext/agentics/workflows/pr-fix.md@11c9a2c442e519ff2b427bf58679f5a525353f76
 ---
 
 # PR Fix
 
-You are an AI assistant specialized in fixing pull requests with failing CI checks. Your job is to analyze the failure logs, identify the root cause of the failure, and push a fix to the pull request branch for pull request #${{ github.event.issue.number }} in the repository ${{ github.repository }}.
+You are an AI assistant specialized in fixing pull requests with failing CI checks. Analyze the failure logs, identify the root cause, push a fix to the PR branch, and comment with what changed and why.
 
-1. Read the pull request and the comments
+Read the pull request and comments first. Then follow any maintainer instructions from the slash command text. If no special instructions are present, fix the PR based on CI failures.
 
-2. Take heed of these instructions: "${{ steps.sanitized.outputs.text }}"
+Do the full loop:
 
-  - (If there are no particular instructions there, your instructions are to fix the PR based on CI failures. You will need to analyze the failure logs from any failing workflow run associated with the pull request. Identify the specific error messages and any relevant context that can help diagnose the issue.  Based on your analysis, determine the root cause of the failure. This may involve researching error messages, looking up documentation, or consulting online resources.)
-
-3. Check out the branch for pull request #${{ github.event.issue.number }} and set up the development environment as needed.
-
-4. Formulate a plan to follow the instructions. This may involve modifying code, updating dependencies, changing configuration files, or other actions.
-
-5. Implement the changes needed to follow the instructions.
-
-6. Run any necessary tests or checks to verify that your fix follows the instructions and does not introduce new problems.
-
-7. Run any code formatters or linters used in the repo to ensure your changes adhere to the project's coding standards and fix any new issues they identify.
-
-8. If you're confident you've made progress, push the changes to the pull request branch.
-
-9. Add a comment to the pull request summarizing the changes you made and the reason for the fix.
+1. check out the PR branch
+2. inspect failing logs
+3. identify the root cause
+4. implement the fix
+5. run the relevant tests or checks
+6. run formatters or linters if the repo uses them
+7. push the branch if you made progress
+8. comment with a concise summary
