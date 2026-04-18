@@ -153,6 +153,7 @@ else
   create_label "spec-drift" "PR does things the plan did not ask for" "E4E669"
   create_label "human-review" "Emergency stop for automation" "B60205"
   create_label "needs-rebase" "PR needs origin/main merged into it" "E4E669"
+  create_label "eval-regression" "One or more eval cases failed on this PR" "E4E669"
   create_label "self-improvement" "Created by the learning loop" "C5DEF5"
   create_label "ci-fix" "Created by ci-cleaner" "FBCA04"
   create_label "plan-file" "PR contains a plan file" "D4C5F9"

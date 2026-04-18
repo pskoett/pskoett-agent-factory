@@ -203,7 +203,7 @@ The factory retains multiple implementer labels, but platform reality matters mo
 | `conflict-resolver` | PR labeled `needs-rebase` | merges `origin/main` into the PR branch when clean |
 | `contribution-checker` | PR opened or updated | checks repo process alignment |
 | `simplify-and-harden-ci` | PR opened or updated | scan-only quality and security pass |
-| `eval-creator-ci` | PR opened or updated | advisory regression checks |
+| `eval-creator-ci` | PR opened or updated | advisory regression checks; adds `eval-regression` on failures and clears it on the next green run |
 | `ci-cleaner` | CI failure on `main` | fixes failing mainline CI |
 | `self-improvement-meta` | nightly | extracts learnings and promotes durable rules |
 | `learning-aggregator-ci` | weekly | groups learnings, analyzes transcript artifacts, and ranks gaps |

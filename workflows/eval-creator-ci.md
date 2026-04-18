@@ -33,6 +33,12 @@ safe-outputs:
   add-comment:
     max: 1
     hide-older-comments: true
+  add-labels:
+    allowed: [eval-regression]
+    max: 1
+  remove-labels:
+    allowed: [eval-regression]
+    max: 1
 tracker-id: eval-creator
 concurrency:
   group: eval-creator-run
@@ -87,6 +93,15 @@ Post exactly one comment:
 [List of skipped evals with reason]
 ```
 
+## Label signaling
+
+After posting the comment, apply label changes based on `fail_count`:
+
+- If `fail_count > 0`, add the `eval-regression` label to the PR.
+- If `fail_count == 0`, remove the `eval-regression` label from the PR. If the label is absent already, treat the removal as a no-op.
+
+The label signals that a human needs to look at the regression result. It should clear automatically on the next green run so stale failures do not linger.
+
 ## Noop
 
 Call `noop` if:
@@ -101,4 +116,4 @@ Follow the writing rules in `AGENTS.md`. Tables. Pass or fail. No hedging.
 
 ## Session capture
 
-This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. The `learning-aggregator-ci` workflow downloads and analyzes these artifacts weekly to extract improvement patterns for the outer learning loop.

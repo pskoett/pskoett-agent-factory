@@ -244,6 +244,7 @@ These labels are created by `install.sh` because the workflows rely on them:
 | `impl:claude-opus`, `impl:claude-sonnet`, `impl:copilot`, `impl:codex` | implementer routing |
 | `ai-reviewed`, `needs-changes`, `fast-track`, `spec-drift` | review outcomes |
 | `needs-rebase` | triggers conflict resolution |
+| `eval-regression` | one or more eval cases failed on the PR; set by `eval-creator-ci` and cleared on the next green run |
 | `human-review` | emergency circuit breaker |
 | `plan-file`, `ci-fix`, `self-improvement`, `workflow-health` | factory provenance |
 | `automation`, `low-risk`, `pr-fix` | routine automation labels |
@@ -278,6 +279,8 @@ That rule exists because those files can directly alter the reviewer's own behav
 
 Agent-backed workflows upload an `agent` artifact that contains the session transcript, tool outputs, and token usage. `learning-aggregator-ci` analyzes those artifacts weekly, then routes transcript-only patterns back into `self-improvement-meta` using `**TRANSCRIPT CANDIDATE**` markers.
 
+`learning-aggregator-ci` now treats transcript download success and pattern extraction as separate signals. It should verify each `gh run download` with a directory listing, read `agent-stdio.log` from the extracted directory, and report both how many artifacts were actually read and how many new patterns were extracted.
+
 ## Optional GitHub Projects Board
 
 Some operators want a board-level view of the factory state. That works well, but it must stay a visualization layer only.
@@ -304,7 +307,7 @@ Evaluate top-down. The first matching rule wins:
 | Priority | Condition | Lane |
 |----------|-----------|------|
 | 1 | item is closed | `Done` |
-| 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file` | `Your turn` |
+| 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file`, `eval-regression` | `Your turn` |
 | 3 | is an open PR with no stronger signal | `Your turn` |
 | 4 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
 | 5 | everything else | `Waiting for spec` |

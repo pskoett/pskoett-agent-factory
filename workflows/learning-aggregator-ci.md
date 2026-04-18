@@ -66,6 +66,13 @@ If `.learnings/` does not exist or all files are empty and no transcript artifac
 
 Every agent-backed workflow run uploads an `agent` artifact containing the session transcript. Download and analyze recent transcripts to find patterns not yet logged in `.learnings/`.
 
+`gh run download` extracts the artifact contents directly into `--dir`. It does not leave a zip file behind.
+
+Track two counters throughout this phase:
+
+- `artifacts_read`: how many `agent-stdio.log` files were successfully opened and non-empty
+- `patterns_extracted`: how many distinct new patterns were identified across all transcripts
+
 ### Step 1: Discover recent factory workflow runs
 
 List the last 20 runs for each agent-backed factory workflow in this template:
@@ -89,19 +96,41 @@ For each run ID collected above, attempt to download the `agent` artifact:
 ```bash
 mkdir -p /tmp/transcripts/<run-id>
 gh run download <run-id> --name agent --dir /tmp/transcripts/<run-id> 2>/dev/null || true
+ls /tmp/transcripts/<run-id>/ 2>/dev/null || echo "no files downloaded for run <run-id>"
 ```
 
-Skip silently if the artifact does not exist or has expired.
+The `ls` step is required. Run it for every attempted download so missing artifacts are visible instead of silent.
+
+If the directory is empty or `ls` fails, note that the run had no downloadable artifact and continue. Do not fail the whole phase.
 
 ### Step 3: Parse transcripts for patterns
 
-For each downloaded transcript, read `agent-stdio.log`. Apply the transcript analysis method from `.claude/skills/learning-aggregator/SKILL.md`:
+For each run directory, check for the transcript at the canonical path and read it:
+
+```bash
+ls /tmp/transcripts/<run-id>/
+cat /tmp/transcripts/<run-id>/agent-stdio.log
+```
+
+If `/tmp/transcripts/<run-id>/agent-stdio.log` exists and is non-empty, increment `artifacts_read`. If it does not exist, note the missing file and continue.
+
+Apply the transcript analysis method from `.claude/skills/learning-aggregator/SKILL.md`:
 
 - retry loops
 - approach changes mid-task
 - error messages in tool outputs
 - noop calls on runs that should have produced output
 - workflow and event context
+
+For each distinct pattern found, increment `patterns_extracted`.
+
+Success-path example:
+
+- run `24604287411` downloads into `/tmp/transcripts/24604287411/`
+- `ls` shows `agent-stdio.log`, `agent_usage.json`, and `safeoutputs.jsonl`
+- `agent-stdio.log` shows the same `gh api` call repeated four times before succeeding
+- map that to a `Pattern-Key` such as `retry-loop.gh-api`
+- result: `artifacts_read=1`, `patterns_extracted=1`
 
 Map each finding to a `Pattern-Key` and merge it with the learnings-file findings.
 
@@ -125,7 +154,8 @@ Create one issue with this structure:
 
 **Scan date**: YYYY-MM-DD
 **Learnings entries scanned**: N
-**Transcript artifacts analyzed**: M
+**Transcript artifacts read**: M
+**Transcript patterns extracted**: P_t
 **Pattern groups**: K
 **Promotion candidates**: P
 
@@ -143,7 +173,12 @@ Create one issue with this structure:
 
 ### Transcript-Only Findings (not yet in .learnings/)
 
-[Patterns found only in transcripts that have not been logged manually. These are candidates for addition through the next self-improvement PR.]
+[Patterns found only in transcripts that have not been logged manually. These are candidates for addition through the next self-improvement PR.
+
+If artifacts were read but no new patterns were found, write:
+"artifacts read: M, patterns extracted: 0. Transcripts were parseable but yielded no new patterns not already covered in .learnings/."
+
+Do not omit this section when M > 0.]
 
 ### Ungrouped Entries
 
@@ -169,4 +204,4 @@ Follow the writing rules in `AGENTS.md`. Tables over prose. Evidence over opinio
 
 ## Session capture
 
-This workflow's full session is automatically captured in the `agent` artifact for this run. Because this workflow consumes transcript artifacts, it does not recurse on its own transcript.
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. Because this workflow consumes transcript artifacts, it does not recurse on its own transcript.

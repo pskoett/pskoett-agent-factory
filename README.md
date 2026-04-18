@@ -33,6 +33,7 @@ Recent stabilizations included here:
 - `reviewer` auto-labels PRs that are behind `main` with `needs-rebase`
 - `reviewer` refuses to self-review PRs that modify its own instructions or adjacent guardrails
 - `conflict-resolver` can safely merge workflow-file changes from `main`
+- `eval-creator-ci` raises `eval-regression` when promoted learnings fail on a PR and clears it on the next green run
 - agent-backed workflows emit session transcript artifacts for the outer learning loop
 - `learning-aggregator-ci` consumes those transcript artifacts and routes transcript-only patterns back into `self-improvement-meta`
 

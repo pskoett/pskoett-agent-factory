@@ -27,6 +27,7 @@ These are the main labels that drive the factory:
 | `fast-track` | small PR with zero meaningful findings | `reviewer` |
 | `spec-drift` | PR does work the plan did not ask for | `reviewer` |
 | `human-review` | circuit breaker that forces workflows to noop | human or `reviewer` self-tamper guard |
+| `eval-regression` | one or more eval cases failed on this PR | `eval-creator-ci` |
 
 ## Optional Projects-board labels
 
@@ -45,7 +46,7 @@ If you add a Projects v2 board, this four-lane model matches the tested flow wel
 | Priority | Condition | Lane |
 |----------|-----------|------|
 | 1 | item is closed | `Done` |
-| 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file` | `Your turn` |
+| 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file`, `eval-regression` | `Your turn` |
 | 3 | is an open PR with no stronger signal | `Your turn` |
 | 4 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
 | 5 | everything else | `Waiting for spec` |
@@ -64,7 +65,7 @@ This is intentionally label-derived. Do not use the board as the source of truth
 | `conflict-resolver` | PR labeled `needs-rebase` | merges `origin/main` when clean or blocks for human help |
 | `contribution-checker` | PR opened or updated | checks process and contribution alignment |
 | `simplify-and-harden-ci` | PR opened or updated | scan-only simplicity and security review |
-| `eval-creator-ci` | PR opened or updated | regression verification against promoted learnings |
+| `eval-creator-ci` | PR opened or updated | regression verification against promoted learnings; adds `eval-regression` on failures and clears it on the next green run |
 | `pr-fix` | `/pr-fix` comment | pushes repair commits to the PR branch |
 | `ci-cleaner` | CI failure on `main` | opens a fix PR for mainline breakage |
 | `self-improvement-meta` | nightly | promotes durable learnings into harness files and workflows |
