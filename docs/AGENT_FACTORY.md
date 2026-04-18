@@ -206,6 +206,20 @@ The factory routes to Copilot only.
 
 `spec-refiner` defaults to `impl:copilot` because that is the only route the factory can currently complete automatically. If a maintainer wants Claude or Codex, do that handoff outside the factory after the source issue is active.
 
+## Migration note for in-flight issues from the old sub-issue flow
+
+If a target repo still has issues that were in flight through the older `/plan` to sub-issue chain when this factory layout changed, those old sub-issues and their dispatcher path no longer apply. The source issue is now the direct unit of work.
+
+To restart the chain for a stranded source issue, apply `ready-for-implementation` directly to the source issue. That triggers `implementer-dispatcher` and resumes the chain from the current source issue.
+
+Example:
+
+```bash
+gh issue edit <issue-number> --add-label ready-for-implementation
+```
+
+Remove any stale sub-issues manually. They are orphaned and will not be picked up by the current factory.
+
 ## Workflow Inventory
 
 Custom gh-aw workflow sources in this repo:
