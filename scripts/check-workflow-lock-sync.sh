@@ -35,7 +35,9 @@ fi
 echo "Checking ${PAIR_COUNT} workflow pair(s) in ${WORKFLOWS_DIR}/..."
 echo ""
 
-if gh aw compile --help | grep -q -- "--check-only"; then
+COMPILE_HELP="$(gh aw compile --help 2>&1 || true)"
+
+if [[ "$COMPILE_HELP" == *"--check-only"* ]]; then
   echo "Strategy: native 'gh aw compile --check-only' (read-only, no side effects)"
   echo ""
   CHECK_ONLY_OUT=$(gh aw compile --check-only 2>&1) || CHECK_ONLY_RC=$?
