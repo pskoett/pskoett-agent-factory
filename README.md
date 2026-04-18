@@ -101,6 +101,57 @@ PR opened
 pr-fix / ci-cleaner / self-improvement-meta
 ```
 
+## Factory State
+
+The factory is state-driven. Labels are the control plane.
+
+Core state labels:
+
+| Label | Meaning |
+|-------|---------|
+| `needs-spec` | source issue is ready for spec refinement |
+| `needs-plan` | plan PR is open and waiting for human review |
+| `blocked-on-human` | automation is paused until a human acts |
+| `ready-for-implementation` | source issue is ready for an implementer |
+| `assigned-to-agent` | source issue has been dispatched to Copilot |
+| `needs-rebase` | PR branch is behind `main` |
+| `ai-reviewed` | reviewer found no blocking problems |
+| `needs-changes` | reviewer found blocking issues or missed criteria |
+| `eval-regression` | one or more promoted learnings failed on the PR |
+| `human-review` | emergency circuit breaker; workflows should noop |
+
+Routing labels:
+
+| Label | Meaning |
+|-------|---------|
+| `impl:copilot` | only auto-routable implementer |
+| `impl:claude-opus` | manual hand-off only |
+| `impl:claude-sonnet` | manual hand-off only |
+| `impl:codex` | manual hand-off only |
+
+Operator rules:
+
+- Only `impl:copilot` auto-routes.
+- `eval-regression` means the PR needs human attention even though evals are still advisory.
+- To re-dispatch a source issue, remove `assigned-to-agent` if present and then re-add `ready-for-implementation`.
+- `human-review` stops the chain on the current issue or PR.
+
+### Optional Board View
+
+If you add the optional Projects v2 board layer, use the labels as the source of truth and let the board derive from them.
+
+Suggested lane mapping:
+
+| Priority | Condition | Lane |
+|----------|-----------|------|
+| 1 | item is closed | `Done` |
+| 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file`, `eval-regression` | `Your turn` |
+| 3 | is an open PR with no stronger signal | `Your turn` |
+| 4 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
+| 5 | everything else | `Waiting for spec` |
+
+The board is optional. The factory works without it.
+
 ## Installing Into A Target Repo
 
 From the target repository:
