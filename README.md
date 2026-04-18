@@ -10,7 +10,7 @@ It is **not entirely stable yet**. The flow, prompts, labels, and installer beha
 
 ## Current Factory Shape
 
-The source issue is the unit of work from start to finish. The factory no longer relies on `/plan` plus sub-issues.
+The source issue is the unit of work from start to finish.
 
 `spec-refiner` now has three paths:
 
@@ -18,13 +18,13 @@ The source issue is the unit of work from start to finish. The factory no longer
 2. **Direct route**: for clearly bounded trivial work, assign Copilot directly without a plan PR.
 3. **Blocked or terminal**: hand the issue back to a human with `blocked-on-human`.
 
-The practical consequences are simpler and more reliable:
+Core properties of the current flow:
 
-- No parent-issue lookup.
-- No sub-issue fan-out.
-- No plan-number race from scanning `docs/plans/`.
-- No silent stalls when plan PRs accidentally close the source issue.
-- No fake auto-routing for agents that do not have an assignable GitHub user.
+- Plan files use the source issue number in the filename.
+- The implementation checklist is written back onto the source issue after a plan PR merges.
+- Trivial issues can go straight to Copilot without a plan PR.
+- Non-trivial issues go through a plan PR and human merge gate.
+- Only `impl:copilot` can be auto-routed.
 
 Only `impl:copilot` auto-routes today. `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` remain useful labels for manual hand-off, but the factory does not auto-assign them.
 
