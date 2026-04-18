@@ -396,5 +396,5 @@ See [`FACTORY_STATE_MACHINE.md`](FACTORY_STATE_MACHINE.md) for the operator-faci
 - If you change any installed `.github/workflows/*.md` file, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
 - If you want to re-dispatch an already assigned issue, remove `assigned-to-agent` if it is present, then re-add `ready-for-implementation`.
 - Use `scripts/factory-smoke.sh` before and after factory changes when you want a fast environment-level regression check.
-- Use `scripts/factory-e2e.sh` when you want to exercise the label-driven chain with a disposable canary issue. The canary explicitly suppresses implementation and should end in `noop`, not a real code change.
+- Use `scripts/factory-e2e.sh` when you want to exercise the label-driven chain with a disposable canary issue. The harness closes the issue on exit and sweeps late canary PRs if they appear.
 - Expect this guide to keep changing while the flow stabilizes further.

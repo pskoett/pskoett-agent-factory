@@ -24,9 +24,8 @@ Event-driven workflows such as `spec-refiner`, `reviewer`, `pr-fix`, and `trigge
 ## factory-e2e.sh
 
 Files a canary issue and watches it through the installed factory chain.
-The canary is a plumbing test only. It explicitly tells coding agents to call
-`noop` instead of implementing anything, and the harness closes the issue on
-exit unless `--keep` is set.
+The harness closes the issue on exit unless `--keep` is set, and it does a
+post-close sweep for late PRs that still reference the canary.
 
 ```bash
 scripts/factory-e2e.sh
