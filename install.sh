@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install the pskoett agent factory into the current repository.
+# Install the agent factory into the current repository.
 #
 # This script:
 #   1. Copies gh-aw workflow sources to .github/workflows/

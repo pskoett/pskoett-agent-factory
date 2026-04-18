@@ -1,12 +1,12 @@
-# pskoett-agent-factory
+# Agent Factory Template
 
 An agent factory template for GitHub repositories, built on [GitHub Agentic Workflows (gh-aw)](https://github.github.com/gh-aw/).
 
 ## Status
 
-This repository is still very much a **test project template** extracted from [`pskoett/measuring-ai-proficiency`](https://github.com/pskoett/measuring-ai-proficiency).
+This repository is still very much an **experimental template**.
 
-It is **not entirely stable yet**. The flow, prompts, labels, and installer behavior are still being adjusted as the test factory keeps changing. Treat this repo as an evolving baseline, not a finished production product.
+It is **not entirely stable yet**. The flow, prompts, labels, and installer behavior are still being adjusted. Treat this repo as an evolving baseline, not a finished production product.
 
 ## Current Factory Shape
 
@@ -28,7 +28,7 @@ The practical consequences are simpler and more reliable:
 
 Only `impl:copilot` auto-routes today. `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` remain useful labels for manual hand-off, but the factory does not auto-assign them.
 
-Recent stabilizations pulled from the test project:
+Recent stabilizations included here:
 
 - `reviewer` auto-labels PRs that are behind `main` with `needs-rebase`
 - `reviewer` refuses to self-review PRs that modify its own instructions or adjacent guardrails
@@ -103,8 +103,8 @@ pr-fix / ci-cleaner / self-improvement-meta
 From the target repository:
 
 ```bash
-git clone https://github.com/pskoett/pskoett-agent-factory.git /tmp/pskoett-agent-factory
-/tmp/pskoett-agent-factory/install.sh
+git clone <template-repo-url> /tmp/agent-factory-template
+/tmp/agent-factory-template/install.sh
 ```
 
 The installer:
@@ -142,12 +142,13 @@ Plain GitHub Actions support workflows:
 - [`workflow-support/plan-merged-dispatcher.yml`](./workflow-support/plan-merged-dispatcher.yml)
 - [`workflow-support/lock-file-sync.yml`](./workflow-support/lock-file-sync.yml)
 
-The current template still does **not** auto-install the Projects board sync workflow from `measuring-ai-proficiency` because that workflow is tied to repo-specific Projects v2 IDs and PAT configuration. Port it only as a project-specific customization after installation.
+The current template still does **not** auto-install any Projects board sync workflow because those workflows are usually tied to repo-specific Projects v2 IDs and PAT configuration. Port that only as a project-specific customization after installation.
 
 ## Skills
 
 The factory depends on these skill sources:
 
+- External skill repository: [pskoett/pskoett-ai-skills](https://github.com/pskoett/pskoett-ai-skills)
 - [`skills/plan-interview`](./skills/plan-interview/SKILL.md)
 - [`skills/self-improvement`](./skills/self-improvement/SKILL.md)
 - [`skills/intent-framed-agent`](./skills/intent-framed-agent/SKILL.md)
@@ -166,4 +167,4 @@ The factory depends on these skill sources:
 - `impl:copilot` is the only label that auto-routes today.
 - If you edit a workflow source after installation, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
 - The lock-sync guard exists because stale compiled workflow files were a real source of drift during testing.
-- Expect this template to change again as the test project keeps evolving.
+- Expect this template to change again as the flow continues to evolve.

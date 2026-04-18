@@ -1,12 +1,12 @@
 # Agent Factory
 
-This repository packages the agent factory pattern extracted from `measuring-ai-proficiency` and reshaped into a reusable template.
+This repository packages an agent factory pattern extracted from a continuously tested reference implementation and reshaped into a reusable template.
 
 ## Status
 
-This template is still derived from an actively changing test factory. It is **not entirely stable yet**.
+This template is still evolving. It is **not entirely stable yet**.
 
-Use it as a strong starting point, not as a frozen contract. Workflow prompts, handoff rules, labels, and installer behavior may still change when the test project discovers a better flow.
+Use it as a strong starting point, not as a frozen contract. Workflow prompts, handoff rules, labels, and installer behavior may still change as the flow matures.
 
 ## End-To-End Chain
 
@@ -138,8 +138,8 @@ Set these in the target repository when you install the factory:
 From the target repository:
 
 ```bash
-git clone https://github.com/pskoett/pskoett-agent-factory.git /tmp/pskoett-agent-factory
-/tmp/pskoett-agent-factory/install.sh
+git clone <template-repo-url> /tmp/agent-factory-template
+/tmp/agent-factory-template/install.sh
 ```
 
 The installer copies all workflow sources, support workflows, skills, harness files, and helper scripts. It also creates the labels and runs `gh aw compile`.
@@ -270,11 +270,11 @@ Agent-backed workflows upload an `agent` artifact that contains the session tran
 
 ### Project-Specific Optional Feature
 
-`measuring-ai-proficiency` also has a Projects v2 status sync workflow. It is intentionally not auto-installed by this template because it depends on repo-specific project IDs and PAT scopes. Treat that as a project-level customization, not a factory default.
+A Projects v2 status sync workflow may exist in a reference deployment. It is intentionally not auto-installed by this template because it depends on repo-specific project IDs and PAT scopes. Treat that as a project-level customization, not a factory default.
 
 ## Operator Notes
 
 - If you change any installed `.github/workflows/*.md` file, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
 - If you want to re-dispatch an already assigned issue, remove both `assigned-to-agent` and `ready-for-implementation`, then re-add `ready-for-implementation`.
 - If you want Claude or Codex to implement the issue, swap the `impl:*` label after reviewing the plan PR and hand the issue off manually.
-- Expect this guide to keep changing while the test factory stabilizes further.
+- Expect this guide to keep changing while the flow stabilizes further.

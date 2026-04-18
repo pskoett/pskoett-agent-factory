@@ -169,4 +169,4 @@ The current chain also has an explicit observability loop:
 
 ## Stability Note
 
-This template is still tracking a live test factory. The diagrams and handoff rules here are accurate to the latest sync, but more changes are likely before the factory can be called stable.
+This template is still evolving. The diagrams and handoff rules here are accurate to the latest sync, but more changes are likely before the factory can be called stable.

@@ -1,6 +1,6 @@
 # Agents
 
-This file defines the shared context for agents working on `pskoett-agent-factory`.
+This file defines the shared context for agents working on this repository.
 
 This repository is a **template source** for a GitHub agent factory. It is not the installed runtime layout. The canonical template files live here and are copied into a target repository by `install.sh`.
 
@@ -8,7 +8,7 @@ This repository is a **template source** for a GitHub agent factory. It is not t
 
 This repo packages a tested agent-factory pattern built on [GitHub Agentic Workflows (gh-aw)](https://github.github.com/gh-aw/).
 
-This template still tracks an actively changing test project and is not entirely stable yet. Expect workflow and doc updates as the test factory evolves.
+This template is not entirely stable yet. Expect workflow and doc updates as the flow evolves.
 
 The tested flow is:
 

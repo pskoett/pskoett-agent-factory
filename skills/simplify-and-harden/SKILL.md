@@ -24,7 +24,7 @@ npx skills add pskoett/pskoett-ai-skills/skills/simplify-and-harden-ci
 | Skill ID      | `simplify-and-harden`          |
 | Version       | 0.1.0                          |
 | Trigger       | Post-completion hook           |
-| Author        | Peter Skøtt Pedersen           |
+| Author        | Contributors                   |
 | Category      | Code Quality / Security        |
 | Priority      | Recommended                    |
 
