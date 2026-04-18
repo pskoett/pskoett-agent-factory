@@ -13,9 +13,9 @@ It is still test-derived and not entirely stable yet.
 - Plan PRs must reference the source issue with `Refs #N`, not closing keywords.
 - `plan-merged-dispatcher` writes the implementation checklist back onto the source issue body.
 - Only `impl:copilot` auto-routes today.
-- `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` are manual hand-off labels.
-- The workflow-available REST assignment path silently drops Partner Agents, so Claude and Codex remain manual hand-offs.
+- If a maintainer wants Claude or Codex, that handoff happens outside the automated factory.
 - Agent-backed workflows upload session transcripts as `agent` artifacts for the learning loop.
+- `factory-health` opens a weekly observability issue for workflow outcomes and stuck-state signals.
 
 ## Repo Layout
 
@@ -31,4 +31,5 @@ It is still test-derived and not entirely stable yet.
 - Do not reintroduce `/plan` or sub-issue routing.
 - Do not reintroduce sequential plan numbering.
 - If you add or change workflow files, make sure `install.sh` copies them.
+- If the template ships hand-crafted evals under `.evals/`, make sure `install.sh` and the smoke test seed them into installed repos.
 - Keep operator docs aligned with review self-tamper, `needs-rebase`, and transcript-driven learning behavior.

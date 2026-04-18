@@ -89,7 +89,7 @@ Do not quote or implement a `shipped`, `superseded`, or `abandoned` plan as thou
 
 Before writing the PR, append a `## Recommended implementer` section to the plan file.
 
-Always recommend `copilot`. Copilot is the only implementer the factory can auto-assign today. GitHub Partner Agents such as Claude and Codex may appear in the UI assignees picker, but the REST API path available to workflows silently drops them, so the factory cannot dispatch them programmatically. Until GitHub exposes proper API assignment for Partner Agents, the `impl:claude-*` and `impl:codex` labels remain human-override signals for manual UI assignment.
+Always recommend `copilot`. The factory auto-routes to Copilot only. If a maintainer wants a different implementer, that handoff happens outside the factory.
 
 Example:
 
@@ -97,10 +97,10 @@ Example:
 ## Recommended implementer
 
 **Choice**: copilot
-**Rationale**: Auto-assignable via `implementer-dispatcher`. For manual hand-off to Claude or Codex through the GitHub UI, a human can swap the label on the source issue before merging the plan PR.
+**Rationale**: Auto-assignable via `implementer-dispatcher`. The factory routes to Copilot only. Hand-assign Partner Agents outside the factory via the GitHub UI if needed.
 ```
 
-After writing the recommendation in the plan file, add the `impl:copilot` label to the source issue. A human can swap it to `impl:claude-opus`, `impl:claude-sonnet`, or `impl:codex` before merging if they want a manual UI assignment outside the factory.
+After writing the recommendation in the plan file, add the `impl:copilot` label to the source issue.
 
 ## Handoff by path
 

@@ -18,9 +18,6 @@ These are the main labels that drive the factory:
 | `ready-for-implementation` | source issue is ready for a coding agent | `plan-merged-dispatcher` on the plan-worthy path, `spec-refiner` on the direct route |
 | `assigned-to-agent` | source issue has been dispatched to Copilot | `implementer-dispatcher` or `spec-refiner` on the direct route |
 | `impl:copilot` | auto-routable implementer label | `spec-refiner` or human |
-| `impl:claude-opus` | manual hand-off label | human |
-| `impl:claude-sonnet` | manual hand-off label | human |
-| `impl:codex` | manual hand-off label | human |
 | `needs-rebase` | PR branch is behind `main` | `reviewer` or human |
 | `ai-reviewed` | review passed with no blockers | `reviewer` |
 | `needs-changes` | review found blockers or missed criteria | `reviewer` |
@@ -69,6 +66,7 @@ This is intentionally label-derived. Do not use the board as the source of truth
 | `eval-creator-ci` | PR opened or updated | regression verification against promoted learnings; adds `eval-regression` on failures and clears it on the next green run |
 | `pr-fix` | `/pr-fix` comment | pushes repair commits to the PR branch |
 | `ci-cleaner` | CI failure on `main` | opens a fix PR for mainline breakage |
+| `factory-health` | weekly | creates one `[health]` issue with workflow outcomes, failure types, handoff latency, unresolved signals, and override rate |
 | `self-improvement-meta` | nightly | promotes durable learnings into harness files and workflows |
 | `learning-aggregator-ci` | weekly | analyzes learnings and transcript artifacts for patterns |
 | `lock-file-sync` | PR touches workflow sources or lock files | fails on stale compiled workflow locks |
@@ -130,7 +128,7 @@ human merges implementation PR
 |----------|--------|
 | What starts planning? | Add `needs-spec` to the source issue. |
 | What starts implementation? | `ready-for-implementation` on the source issue. |
-| What is auto-routable? | Only `impl:copilot`. Claude and Codex remain manual hand-offs. |
+| What is auto-routable? | Only `impl:copilot`. |
 | How do I stop the chain? | Add `human-review` to the issue or PR. |
 | How do I re-dispatch a source issue? | Remove `assigned-to-agent` if present, then re-add `ready-for-implementation`. |
 | Is the Projects board required? | No. It is an optional visualization layer, not a factory requirement. |

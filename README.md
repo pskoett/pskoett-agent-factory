@@ -26,17 +26,18 @@ Core properties of the current flow:
 - Trivial issues can go straight to Copilot without a plan PR.
 - Non-trivial issues go through a plan PR and human merge gate.
 - Only `impl:copilot` can be auto-routed.
-
-Only `impl:copilot` auto-routes today. `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` remain useful labels for manual hand-off, but the factory does not auto-assign them.
+- `factory-health` creates a weekly observability issue for workflow outcomes and stuck-state signals.
 
 Recent stabilizations included here:
 
 - `reviewer` auto-labels PRs that are behind `main` with `needs-rebase`
 - `reviewer` refuses to self-review PRs that modify its own instructions or adjacent guardrails
+- `reviewer` blocks bot-authored implementation PRs that do not close their source issue
 - `conflict-resolver` can safely merge workflow-file changes from `main`
 - `eval-creator-ci` raises `eval-regression` when promoted learnings fail on a PR and clears it on the next green run
 - agent-backed workflows emit session transcript artifacts for the outer learning loop
 - `learning-aggregator-ci` consumes those transcript artifacts and routes transcript-only patterns back into `self-improvement-meta`
+- `factory-health` emits a stable weekly report issue for workflow health and operator follow-up
 
 ## Repository Layout
 
@@ -46,6 +47,7 @@ This repo is a template source, not a live installed factory:
 - [`workflows/`](./workflows) contains the custom gh-aw Markdown workflow sources.
 - [`workflow-support/`](./workflow-support) contains plain GitHub Actions workflows that the factory needs.
 - [`skills/`](./skills) contains the vendored skill sources that `install.sh` copies into `.claude/skills/` in the target repo.
+- [`.evals/`](./.evals) contains regression checks that installed repos receive when the template ships hand-crafted evals.
 - [`docs/AGENT_FACTORY.md`](./docs/AGENT_FACTORY.md) is the operator guide.
 - [`docs/chain.md`](./docs/chain.md) explains the chain and handoffs.
 - [`docs/FACTORY_STATE_MACHINE.md`](./docs/FACTORY_STATE_MACHINE.md) is the quick operator reference, including the optional Projects board model.
@@ -126,9 +128,6 @@ Routing labels:
 | Label | Meaning |
 |-------|---------|
 | `impl:copilot` | only auto-routable implementer |
-| `impl:claude-opus` | manual hand-off only |
-| `impl:claude-sonnet` | manual hand-off only |
-| `impl:codex` | manual hand-off only |
 
 Operator rules:
 
@@ -172,7 +171,7 @@ The installer:
 - copies the lock-sync helper script into `scripts/`
 - vendors skills into `.claude/skills/`
 - copies `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md` when missing
-- seeds `.learnings/` and `docs/plans/`
+- seeds `.learnings/`, `.evals/`, and `docs/plans/`
 - creates the labels used by the factory
 - runs `gh aw compile`
 
@@ -195,6 +194,7 @@ Custom gh-aw sources in this repo:
 - [`workflows/conflict-resolver.md`](./workflows/conflict-resolver.md)
 - [`workflows/contribution-checker.md`](./workflows/contribution-checker.md)
 - [`workflows/ci-cleaner.md`](./workflows/ci-cleaner.md)
+- [`workflows/factory-health.md`](./workflows/factory-health.md)
 - [`workflows/self-improvement-meta.md`](./workflows/self-improvement-meta.md)
 - [`workflows/simplify-and-harden-ci.md`](./workflows/simplify-and-harden-ci.md)
 - [`workflows/learning-aggregator-ci.md`](./workflows/learning-aggregator-ci.md)
@@ -232,8 +232,10 @@ The `use-agent-factory` skill is the operator handbook for installed repos. It e
 - Plan filenames use the source issue number, not a sequential scan.
 - Merged plans can carry lifecycle frontmatter such as `status: shipped`; treat non-`active` plans as historical context.
 - Plan PRs must not close the source issue.
+- Bot-authored implementation PRs should close the source issue with a PR-body closing keyword such as `Closes #NN`.
 - Direct route is only for clearly bounded trivial work. When uncertain, bias toward a plan PR.
 - `impl:copilot` is the only label that auto-routes today.
+- If the template ships hand-crafted evals in `.evals/`, installed repos should receive them too.
 - If you edit a workflow source after installation, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
 - The lock-sync guard exists because stale compiled workflow files were a real source of drift during testing.
 - Expect this template to change again as the flow continues to evolve.

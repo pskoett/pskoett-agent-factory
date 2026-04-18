@@ -92,6 +92,20 @@ For each success criterion in the plan, classify as:
 
 Significant drift gets the `spec-drift` label. If the PR is from a Claude cloud agent, be stricter on drift.
 
+### Step 3a: Check for closing keyword on bot-authored implementation PRs
+
+Skip this step if the PR is labeled `plan-file`.
+
+If the PR author is a bot such as `copilot-swe-agent[bot]`, `github-actions[bot]`, `claude[bot]`, or `codex[bot]`, or the branch name matches `copilot/*`:
+
+1. Read the PR body.
+2. Check whether the body contains a closing keyword matching `(Closes|Fixes|Resolves)\s+#\d+`, case-insensitive.
+3. If no match is found, add this as a **Critical finding** and set the verdict to `needs-changes`:
+
+   > impl PR must close its source issue. Add `Closes #NN` to the body.
+
+If the closing keyword is present, proceed normally with no finding for this check.
+
 ### Step 4: Review the code
 
 Categorize findings as **Critical**, **Warning**, or **Suggestion**. Do not comment on cosmetic issues unless they harm readability. Apply the calibration from Step 2 to weight which categories you emphasize.

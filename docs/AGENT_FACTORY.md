@@ -91,6 +91,7 @@ Template source here:
 - [`../workflows`](../workflows) for custom gh-aw Markdown workflows
 - [`../workflow-support`](../workflow-support) for plain GitHub Actions support workflows
 - [`../skills`](../skills) for vendored skill sources
+- [`../.evals`](../.evals) for shipped regression checks and hand-crafted eval cases
 - [`../install.sh`](../install.sh) for installation into a target repo
 
 Installed target repo:
@@ -99,6 +100,7 @@ Installed target repo:
 - `.github/workflows/plan-merged-dispatcher.yml`
 - `.github/workflows/lock-file-sync.yml`
 - `.claude/skills/*/SKILL.md`
+- `.evals/EVAL_INDEX.md` and optional `.evals/cases/*.md`
 - `AGENTS.md`, `CLAUDE.md`, `.github/copilot-instructions.md`
 
 ## Prerequisites
@@ -119,7 +121,6 @@ Apply these in the target repository:
 | Allow PR creation | Enabled | `ci-cleaner` and `self-improvement-meta` open PRs |
 | Copilot cloud agent | Enabled | Required for `impl:copilot` routing |
 | Copilot code review | Enabled | Useful for inline review on PRs |
-| Partner Agents | Optional | Enables manual UI assignment of Claude or Codex, but not workflow auto-dispatch |
 | Actions permissions | Allow all actions and reusable workflows | Needed for the full factory chain |
 
 ### Secrets
@@ -142,7 +143,7 @@ git clone <template-repo-url> /tmp/agent-factory-template
 /tmp/agent-factory-template/install.sh
 ```
 
-The installer copies all workflow sources, support workflows, skills, harness files, and helper scripts. It also creates the labels and runs `gh aw compile`.
+The installer copies all workflow sources, support workflows, skills, harness files, helper scripts, and any shipped `.evals/` content. It also creates the labels and runs `gh aw compile`.
 
 Installed target repos also receive the operator-facing `.claude/skills/use-agent-factory/SKILL.md` skill from this template's `skills/use-agent-factory/` source.
 
@@ -158,7 +159,7 @@ This is still the default path for anything non-trivial.
 
 1. `spec-refiner` opens a plan PR under `docs/plans/plan-NNN-<slug>.md`, where `NNN` is the source issue number.
 2. The plan PR must reference the source issue with `Refs #NN`. It must not use closing keywords.
-3. A human reviews the plan PR and may swap the implementer label before merge.
+3. A human reviews the plan PR.
 4. The plan PR merges.
 5. `plan-merged-dispatcher` writes the implementation checklist back into the source issue body, adds `ready-for-implementation`, and stamps the merged plan file as `status: shipped` when lifecycle frontmatter is missing.
 6. `implementer-dispatcher` auto-assigns the source issue if it carries `impl:copilot`.
@@ -197,16 +198,13 @@ On this path, `spec-refiner` removes `needs-spec`, adds `blocked-on-human`, and 
 
 ## Implementer Routing
 
-The factory keeps the old labels, but not all of them can be auto-routed.
+The factory routes to Copilot only.
 
 | Label | Auto-assigned | Meaning |
 |-------|---------------|---------|
 | `impl:copilot` | Yes | Auto-assign the source issue to the Copilot cloud agent |
-| `impl:claude-opus` | No | Manual hand-off outside the factory |
-| `impl:claude-sonnet` | No | Manual hand-off outside the factory |
-| `impl:codex` | No | Manual hand-off outside the factory |
 
-`spec-refiner` defaults to `impl:copilot` because that is the only route the factory can currently complete automatically. Claude and Codex may appear in the GitHub UI assignees picker, but the workflow-available REST path does not reliably assign them.
+`spec-refiner` defaults to `impl:copilot` because that is the only route the factory can currently complete automatically. If a maintainer wants Claude or Codex, do that handoff outside the factory after the source issue is active.
 
 ## Workflow Inventory
 
@@ -220,6 +218,7 @@ Custom gh-aw workflow sources in this repo:
 | `conflict-resolver` | [`../workflows/conflict-resolver.md`](../workflows/conflict-resolver.md) | PR labeled `needs-rebase` |
 | `contribution-checker` | [`../workflows/contribution-checker.md`](../workflows/contribution-checker.md) | PR opened or updated |
 | `ci-cleaner` | [`../workflows/ci-cleaner.md`](../workflows/ci-cleaner.md) | CI failure on `main` |
+| `factory-health` | [`../workflows/factory-health.md`](../workflows/factory-health.md) | Weekly observability report issue |
 | `self-improvement-meta` | [`../workflows/self-improvement-meta.md`](../workflows/self-improvement-meta.md) | Nightly |
 | `simplify-and-harden-ci` | [`../workflows/simplify-and-harden-ci.md`](../workflows/simplify-and-harden-ci.md) | PR opened or updated |
 | `learning-aggregator-ci` | [`../workflows/learning-aggregator-ci.md`](../workflows/learning-aggregator-ci.md) | Weekly |
@@ -243,7 +242,7 @@ These labels are created by `install.sh` because the workflows rely on them:
 | `needs-spec`, `needs-plan`, `spec-refined` | spec refinement handoff |
 | `blocked-on-human` | explicit stop that requires human input |
 | `ready-for-implementation`, `assigned-to-agent` | implementation dispatch |
-| `impl:claude-opus`, `impl:claude-sonnet`, `impl:copilot`, `impl:codex` | implementer routing |
+| `impl:copilot` | implementer routing |
 | `ai-reviewed`, `needs-changes`, `fast-track`, `spec-drift` | review outcomes |
 | `needs-rebase` | triggers conflict resolution |
 | `eval-regression` | one or more eval cases failed on the PR; set by `eval-creator-ci` and cleared on the next green run |
@@ -282,6 +281,18 @@ That rule exists because those files can directly alter the reviewer's own behav
 Agent-backed workflows upload an `agent` artifact that contains the session transcript, tool outputs, and token usage. `learning-aggregator-ci` analyzes those artifacts weekly, then routes transcript-only patterns back into `self-improvement-meta` using `**TRANSCRIPT CANDIDATE**` markers.
 
 `learning-aggregator-ci` now treats transcript download success and pattern extraction as separate signals. It should verify each `gh run download` with a directory listing, read `agent-stdio.log` from the extracted directory, and report both how many artifacts were actually read and how many new patterns were extracted.
+
+### Weekly Factory Health Report
+
+`factory-health` runs weekly and creates one `[health]` issue with five stable sections:
+
+- workflow run outcomes
+- failure categorization
+- spec-to-plan handoff latency
+- unresolved signals
+- human override rate
+
+Use it as an operator dashboard, not as a source of truth. Labels and PR state still drive the factory.
 
 ## Optional GitHub Projects Board
 
@@ -353,5 +364,4 @@ See [`FACTORY_STATE_MACHINE.md`](FACTORY_STATE_MACHINE.md) for the operator-faci
 
 - If you change any installed `.github/workflows/*.md` file, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
 - If you want to re-dispatch an already assigned issue, remove `assigned-to-agent` if it is present, then re-add `ready-for-implementation`.
-- If you want Claude or Codex to implement the issue, swap the `impl:*` label after reviewing the plan PR and hand the issue off manually.
 - Expect this guide to keep changing while the flow stabilizes further.

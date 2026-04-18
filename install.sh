@@ -7,7 +7,7 @@
 #   3. Copies helper scripts used by support workflows
 #   4. Vendors skills to .claude/skills/
 #   5. Copies shared harness files when missing
-#   6. Seeds .learnings/ and docs/plans/
+#   6. Seeds .learnings/, .evals/, and docs/plans/
 #   7. Creates all labels required by the factory
 #   8. Runs gh aw compile
 
@@ -117,6 +117,24 @@ else
   info ".learnings/ already exists"
 fi
 
+mkdir -p .evals/cases
+if [ ! -f ".evals/EVAL_INDEX.md" ]; then
+  info "Seeding .evals/..."
+  cp "$SCRIPT_DIR/.evals/EVAL_INDEX.md" .evals/EVAL_INDEX.md
+else
+  info ".evals/EVAL_INDEX.md already exists"
+fi
+for eval_case in "$SCRIPT_DIR"/.evals/cases/*.md; do
+  [ -f "$eval_case" ] || continue
+  name=$(basename "$eval_case")
+  if [ -f ".evals/cases/$name" ]; then
+    warn "$name already exists in .evals/cases/, skipping"
+  else
+    cp "$eval_case" ".evals/cases/$name"
+    printf "  + %s\n" "$name"
+  fi
+done
+
 if [ ! -d "docs/plans" ]; then
   info "Creating docs/plans/..."
   mkdir -p docs/plans
@@ -143,10 +161,7 @@ else
   create_label "spec-refined" "Plan file created" "0E8A16"
   create_label "ready-for-implementation" "Source issue ready for coding agent" "5319E7"
   create_label "assigned-to-agent" "Issue dispatched to coding agent" "BFD4F2"
-  create_label "impl:claude-opus" "Manual hand-off to Claude Opus" "7057FF"
-  create_label "impl:claude-sonnet" "Manual hand-off to Claude Sonnet" "A371F7"
   create_label "impl:copilot" "Auto-route to Copilot cloud agent" "3FB950"
-  create_label "impl:codex" "Manual hand-off to Codex" "F9826C"
   create_label "ai-reviewed" "PR passed automated review" "0E8A16"
   create_label "needs-changes" "PR has blockers or missed criteria" "D93F0B"
   create_label "fast-track" "PR is small, clean, and ready to merge" "0E8A16"

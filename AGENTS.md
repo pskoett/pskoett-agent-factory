@@ -33,6 +33,7 @@ When editing this repository, use these paths:
 - `scripts/check-workflow-lock-sync.sh`: helper used by the lock-sync workflow
 - `scripts/smoke-test-install.sh`: installs the template into a temporary repo and verifies the generated layout
 - `install.sh`: installs the factory into a target repository
+- `.evals/EVAL_INDEX.md`, `.evals/cases/*.md`: regression checks derived from promoted learnings or hand-crafted guardrails
 - `README.md`, `docs/AGENT_FACTORY.md`, `docs/chain.md`, `docs/FACTORY_STATE_MACHINE.md`: operator-facing documentation
 - `CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`: harness files updated by the learning loop
 
@@ -73,7 +74,7 @@ When editing this repository, use these paths:
 1. **Do not reintroduce `/plan` or sub-issue routing.**
 2. **Do not reintroduce sequential plan numbering.**
 3. **Plan PRs must reference the source issue with `Refs #N`, not a closing keyword.**
-4. **Only `impl:copilot` auto-routes today.** `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` are manual hand-off labels because the workflow-available REST API path silently drops Partner Agent assignees.
+4. **The factory routes to Copilot only.** If a maintainer wants Claude or Codex, that handoff happens outside the automated factory.
 5. **Direct route is only for clearly bounded trivial work.** When uncertain, bias toward the plan-worthy path.
 6. **Keep the harness files aligned.** When a durable rule changes, update `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
 7. **Keep the installer aligned with the file layout.** If you add or rename workflows, support files, scripts, or labels, update `install.sh`.
@@ -172,28 +173,13 @@ Every agent-backed workflow run also uploads an `agent` artifact containing the 
 
 ## Routing Guidance
 
-The factory retains multiple implementer labels, but platform reality matters more than theory.
-
-### Auto-routable
-
 **Copilot cloud agent**
-- Only auto-routable implementer in this factory
+- Only routable implementer inside the automated factory
 - Selected via `impl:copilot`
 - Dispatched by `implementer-dispatcher` or directly by `spec-refiner` on the direct route
-- Works because the available workflow assignment path supports Copilot
+- Works because the workflow assignment path supports Copilot
 
-### Manual labels
-
-**Claude Opus 4.6**
-- Use when a human wants to hand off a complex task manually
-
-**Claude Sonnet 4.6**
-- Use when a human wants a lighter Claude hand-off manually
-
-**Codex GPT-5.4**
-- Use when a human wants a manual Codex hand-off or A/B comparison
-
-`spec-refiner` recommends `copilot` by default because it is the only route the factory can complete automatically. Claude and Codex may appear in the GitHub UI assignees picker, but the workflow-accessible REST path does not reliably assign them.
+`spec-refiner` recommends `copilot` by default because it is the only route the factory can complete automatically. If a maintainer wants Claude or Codex, that handoff happens outside the factory.
 
 ## Workflow Inventory
 
@@ -210,6 +196,7 @@ The factory retains multiple implementer labels, but platform reality matters mo
 | `ci-cleaner` | CI failure on `main` | fixes failing mainline CI |
 | `self-improvement-meta` | nightly | extracts learnings and promotes durable rules |
 | `learning-aggregator-ci` | weekly | groups learnings, analyzes transcript artifacts, and ranks gaps |
+| `factory-health` | weekly | creates a stable observability report issue for workflow outcomes, failure types, handoff latency, unresolved signals, and override rate |
 | `issue-triage` | issue opened or reopened | issue intake and initial labeling |
 | `pr-fix` | `/pr-fix` comment | on-demand PR repair |
 | `lock-file-sync` | PR touches workflow sources or lock files | plain Actions guard for stale lock files |

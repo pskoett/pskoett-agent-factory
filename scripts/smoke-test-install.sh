@@ -59,14 +59,23 @@ info "Checking installed layout"
   assert_dir ".claude/skills"
   assert_dir "scripts"
   assert_dir ".learnings"
+  assert_dir ".evals"
+  assert_dir ".evals/cases"
   assert_dir "docs/plans"
 
   assert_file "AGENTS.md"
   assert_file "CLAUDE.md"
   assert_file ".github/copilot-instructions.md"
   assert_file ".learnings/LEARNINGS.md"
+  assert_file ".evals/EVAL_INDEX.md"
   assert_file "docs/plans/README.md"
   assert_file "scripts/check-workflow-lock-sync.sh"
+
+  for src in "$TEMPLATE_ROOT"/.evals/cases/*.md; do
+    [ -e "$src" ] || continue
+    name="$(basename "$src")"
+    assert_file ".evals/cases/$name"
+  done
 
   for src in "$TEMPLATE_ROOT"/workflows/*.md; do
     name="$(basename "$src")"

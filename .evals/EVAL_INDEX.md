@@ -6,7 +6,7 @@ Managed by `eval-creator-ci`. Do not edit manually unless adding a hand-crafted 
 
 ## Cases
 
-No eval cases yet. Cases will be created by `learning-aggregator-ci` when patterns reach the promotion threshold (3+ recurrences across 2+ tasks).
+- `EVAL-005`: reviewer checks that bot-authored implementation PRs close their source issue
 
 ## Format
 

@@ -20,6 +20,7 @@ It is still evolving. Treat it as the latest known working model, not a permanen
 |  implementer-dispatcher.md self-improvement-meta.md         |
 |  simplify-and-harden-ci.md learning-aggregator-ci.md        |
 |  eval-creator-ci.md        ci-cleaner.md                    |
+|  factory-health.md                                           |
 |  conflict-resolver.md      contribution-checker.md          |
 |  issue-triage.md           pr-fix.md                        |
 |  plan-merged-dispatcher.yml lock-file-sync.yml              |
@@ -114,21 +115,19 @@ merged PR
 nightly and weekly side loops:
   self-improvement-meta
   learning-aggregator-ci
+  factory-health
   ci-cleaner
 ```
 
 ## Routing Model
 
-The factory still uses `impl:*` labels, but only one of them is truly automatable:
+The factory uses one routing label inside the automated path:
 
 | Label | Behavior |
 |-------|----------|
 | `impl:copilot` | auto-assigned by `implementer-dispatcher` or directly by `spec-refiner` on the direct route |
-| `impl:claude-opus` | manual hand-off |
-| `impl:claude-sonnet` | manual hand-off |
-| `impl:codex` | manual hand-off |
 
-That change matters. The old design implied that all implementer labels were equal. In practice they were not. `assign-to-agent` can target the Copilot cloud agent because it is a real GitHub account on the workflow-available assignment path. Claude and Codex remain manual UI assignments.
+That change matters. The old design implied that all implementer labels were equal. In practice they were not. `assign-to-agent` can target the Copilot cloud agent because it is a real GitHub account on the workflow-available assignment path. If a maintainer wants Claude or Codex, that handoff happens outside the automated factory.
 
 ## Why There Is No `/plan`
 
@@ -176,6 +175,7 @@ The current chain also has an explicit observability loop:
 
 - agent-backed workflows emit `agent` artifacts
 - `learning-aggregator-ci` analyzes them weekly
+- `factory-health` opens one weekly `[health]` issue for operator visibility
 - transcript-only patterns are routed back into `self-improvement-meta`
 - promoted rules land in the harness files and workflow prompts
 

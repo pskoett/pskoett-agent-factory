@@ -16,6 +16,7 @@ Out-of-scope changes:
 
 - reintroducing `/plan` and sub-issue routing
 - reintroducing sequential plan numbering
+- claiming factory auto-routing exists for Claude or Codex
 - documenting automation that the factory cannot actually complete
 
 ## Required Checks
@@ -24,8 +25,9 @@ Before opening a PR:
 
 1. Review all changed workflow sources for path and label correctness.
 2. If you changed install behavior, verify `install.sh` still copies every required file.
-3. If you changed docs, confirm they match the current flow.
-4. Run shell syntax checks on any changed shell scripts:
+3. If you changed shipped evals under `.evals/`, verify the installer and smoke test still seed them.
+4. If you changed docs, confirm they match the current flow.
+5. Run shell syntax checks on any changed shell scripts:
 
 ```bash
 bash -n install.sh

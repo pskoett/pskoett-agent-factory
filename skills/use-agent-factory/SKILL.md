@@ -88,11 +88,8 @@ Only one implementer label auto-routes:
 | Label | Meaning |
 |-------|---------|
 | `impl:copilot` | the only auto-routable implementer |
-| `impl:claude-opus` | manual hand-off outside the automated factory |
-| `impl:claude-sonnet` | manual hand-off outside the automated factory |
-| `impl:codex` | manual hand-off outside the automated factory |
 
-If a human wants Claude or Codex, they can swap the label before the plan PR merges and then hand off manually outside the automated path.
+If a human wants Claude or Codex, do that handoff outside the automated path after the source issue is active.
 
 ## Operator moves by label
 
