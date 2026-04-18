@@ -33,6 +33,7 @@ Recent stabilizations included here:
 - `reviewer` auto-labels PRs that are behind `main` with `needs-rebase`
 - `reviewer` refuses to self-review PRs that modify its own instructions or adjacent guardrails
 - `reviewer` blocks bot-authored implementation PRs that do not close their source issue
+- `reviewer` blocks plan PRs that contain closing keywords in the PR body
 - `conflict-resolver` can safely merge workflow-file changes from `main`
 - `eval-creator-ci` raises `eval-regression` when promoted learnings fail on a PR and clears it on the next green run
 - agent-backed workflows emit session transcript artifacts for the outer learning loop
@@ -132,6 +133,7 @@ Routing labels:
 Operator rules:
 
 - Only `impl:copilot` auto-routes.
+- Applying `needs-plan` manually is a supported skip-spec shortcut when you want to activate an issue without running `spec-refiner`.
 - `eval-regression` means the PR needs human attention even though evals are still advisory.
 - To re-dispatch a source issue, remove `assigned-to-agent` if present and then re-add `ready-for-implementation`.
 - `human-review` stops the chain on the current issue or PR.
@@ -205,6 +207,7 @@ Custom gh-aw sources in this repo:
 Plain GitHub Actions support workflows:
 
 - [`workflow-support/plan-merged-dispatcher.yml`](./workflow-support/plan-merged-dispatcher.yml)
+- [`workflow-support/trigger-plan.yml`](./workflow-support/trigger-plan.yml)
 - [`workflow-support/lock-file-sync.yml`](./workflow-support/lock-file-sync.yml)
 
 This template still does **not** auto-install any Projects board sync workflow because those workflows are usually tied to repo-specific Projects v2 IDs, field IDs, and PAT configuration. If you want the same board-style operator view, treat it as an optional project-level customization after installation. The generic setup model is documented in [`docs/AGENT_FACTORY.md`](./docs/AGENT_FACTORY.md) and [`docs/FACTORY_STATE_MACHINE.md`](./docs/FACTORY_STATE_MACHINE.md).

@@ -220,6 +220,18 @@ gh issue edit <issue-number> --add-label ready-for-implementation
 
 Remove any stale sub-issues manually. They are orphaned and will not be picked up by the current factory.
 
+## Skip-Spec Shortcut
+
+If you already know an issue should skip spec refinement, you can apply `needs-plan` directly instead of `needs-spec`.
+
+Installed repos receive a plain GitHub Actions workflow, `trigger-plan.yml`, that fires on `needs-plan` and handles three cases:
+
+1. A merged plan file already exists: recover the checklist onto the source issue and activate it.
+2. No plan file exists and `spec-refined` is absent: treat it as a deliberate skip-spec shortcut and activate the issue into `ready-for-implementation`.
+3. `spec-refined` is present but no merged plan file exists yet: leave the issue alone because the plan PR is still in flight.
+
+This keeps `needs-plan` usable as an intentional operator shortcut without bypassing the current source-issue-centered flow.
+
 ## Workflow Inventory
 
 Custom gh-aw workflow sources in this repo:
@@ -227,6 +239,7 @@ Custom gh-aw workflow sources in this repo:
 | Workflow | File | Trigger |
 |----------|------|---------|
 | `spec-refiner` | [`../workflows/spec-refiner.md`](../workflows/spec-refiner.md) | Issue labeled `needs-spec` |
+| `trigger-plan` | [`../workflow-support/trigger-plan.yml`](../workflow-support/trigger-plan.yml) | Issue labeled `needs-plan`; skip-spec activation or merged-plan recovery |
 | `implementer-dispatcher` | [`../workflows/implementer-dispatcher.md`](../workflows/implementer-dispatcher.md) | Issue labeled `ready-for-implementation` |
 | `reviewer` | [`../workflows/reviewer.md`](../workflows/reviewer.md) | PR opened or updated |
 | `conflict-resolver` | [`../workflows/conflict-resolver.md`](../workflows/conflict-resolver.md) | PR labeled `needs-rebase` |
@@ -295,6 +308,8 @@ That rule exists because those files can directly alter the reviewer's own behav
 Agent-backed workflows upload an `agent` artifact that contains the session transcript, tool outputs, and token usage. `learning-aggregator-ci` analyzes those artifacts weekly, then routes transcript-only patterns back into `self-improvement-meta` using `**TRANSCRIPT CANDIDATE**` markers.
 
 `learning-aggregator-ci` now treats transcript download success and pattern extraction as separate signals. It should verify each `gh run download` with a directory listing, read `agent-stdio.log` from the extracted directory, and report both how many artifacts were actually read and how many new patterns were extracted.
+
+Because transcript artifacts are downloaded from GitHub storage, `learning-aggregator-ci` also needs `network: defaults`. If that key is removed, the workflow can still list runs but artifact downloads may be blocked by the sandbox and Phase 2 will go inert.
 
 ### Weekly Factory Health Report
 

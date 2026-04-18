@@ -13,9 +13,9 @@ These are the main labels that drive the factory:
 | Label | Meaning | Set by |
 |-------|---------|--------|
 | `needs-spec` | issue is ready for spec refinement | human |
-| `needs-plan` | plan PR is open and waiting on human review | `spec-refiner` |
+| `needs-plan` | plan PR is open and waiting on human review, or manual skip-spec shortcut | `spec-refiner` or human |
 | `blocked-on-human` | automation is stopped until a human acts | `spec-refiner`, `conflict-resolver`, other workflows |
-| `ready-for-implementation` | source issue is ready for a coding agent | `plan-merged-dispatcher` on the plan-worthy path, `spec-refiner` on the direct route |
+| `ready-for-implementation` | source issue is ready for a coding agent | `plan-merged-dispatcher` on the plan-worthy path, `spec-refiner` on the direct route, `trigger-plan` on the skip-spec shortcut |
 | `assigned-to-agent` | source issue has been dispatched to Copilot | `implementer-dispatcher` or `spec-refiner` on the direct route |
 | `impl:copilot` | auto-routable implementer label | `spec-refiner` or human |
 | `needs-rebase` | PR branch is behind `main` | `reviewer` or human |
@@ -58,6 +58,7 @@ This is intentionally label-derived. Do not use the board as the source of truth
 | `issue-triage` | issue opened or reopened | initial labels and analysis comment |
 | `spec-refiner` | issue labeled `needs-spec` | opens a plan PR, direct-routes trivial work, or blocks for human input |
 | `plan-merged-dispatcher` | merged plan PR | writes the checklist back to the source issue and adds `ready-for-implementation` |
+| `trigger-plan` | issue labeled `needs-plan` | activates manual skip-spec issues or recovers activation from a merged plan file |
 | `implementer-dispatcher` | issue labeled `ready-for-implementation` | assigns Copilot when `impl:copilot` is present |
 | `reviewer` | PR opened or updated | plan-aware review, behind-main detection, verdict labels |
 | `conflict-resolver` | PR labeled `needs-rebase` | merges `origin/main` when clean or blocks for human help |
@@ -126,7 +127,7 @@ human merges implementation PR
 
 | Question | Answer |
 |----------|--------|
-| What starts planning? | Add `needs-spec` to the source issue. |
+| What starts planning? | Add `needs-spec` to the source issue, or `needs-plan` if you are intentionally using the skip-spec shortcut. |
 | What starts implementation? | `ready-for-implementation` on the source issue. |
 | What is auto-routable? | Only `impl:copilot`. |
 | How do I stop the chain? | Add `human-review` to the issue or PR. |

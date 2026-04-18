@@ -12,6 +12,7 @@ It is still test-derived and not entirely stable yet.
 - Plan files are named from the source issue number: `docs/plans/plan-NNN-<slug>.md`.
 - Plan PRs must reference the source issue with `Refs #N`, not closing keywords.
 - `plan-merged-dispatcher` writes the implementation checklist back onto the source issue body.
+- `trigger-plan` can activate a source issue when `needs-plan` is applied manually.
 - Only `impl:copilot` auto-routes today.
 - If a maintainer wants Claude or Codex, that handoff happens outside the automated factory.
 - Agent-backed workflows upload session transcripts as `agent` artifacts for the learning loop.
@@ -33,3 +34,4 @@ It is still test-derived and not entirely stable yet.
 - If you add or change workflow files, make sure `install.sh` copies them.
 - If the template ships hand-crafted evals under `.evals/`, make sure `install.sh` and the smoke test seed them into installed repos.
 - Keep operator docs aligned with review self-tamper, `needs-rebase`, and transcript-driven learning behavior.
+- If `learning-aggregator-ci` downloads workflow artifacts, keep `network: defaults` in place.

@@ -23,7 +23,8 @@ It is still evolving. Treat it as the latest known working model, not a permanen
 |  factory-health.md                                           |
 |  conflict-resolver.md      contribution-checker.md          |
 |  issue-triage.md           pr-fix.md                        |
-|  plan-merged-dispatcher.yml lock-file-sync.yml              |
+|  plan-merged-dispatcher.yml trigger-plan.yml                |
+|  lock-file-sync.yml                                         |
 +-----------------------------+-------------------------------+
                               |
                               v
@@ -148,11 +149,14 @@ For clearly bounded trivial work, the extra plan handoff adds delay without addi
 
 The rule is conservative on purpose: when uncertain, choose the plan-worthy path.
 
+There is also an intentional skip-spec operator shortcut. Labeling an issue `needs-plan` directly can activate it through `trigger-plan.yml`, which restores the same `ready-for-implementation` handoff the normal path would produce.
+
 ## Why The Plain Actions Workflows Exist
 
 Two parts of the tested flow are better as plain GitHub Actions:
 
 - `plan-merged-dispatcher.yml` reacts to merge events and edits issue bodies
+- `trigger-plan.yml` handles direct `needs-plan` activation and merged-plan recovery
 - `lock-file-sync.yml` validates compiled `.lock.yml` files
 
 These jobs are infrastructure glue, not reasoning-heavy agent work.

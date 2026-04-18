@@ -6,7 +6,9 @@ Managed by `eval-creator-ci`. Do not edit manually unless adding a hand-crafted 
 
 ## Cases
 
+- `EVAL-004`: spec-refiner prompt still forbids closing keywords in plan PR bodies
 - `EVAL-005`: reviewer checks that bot-authored implementation PRs close their source issue
+- `EVAL-006`: reviewer rejects plan PR bodies that contain closing keywords
 
 ## Format
 

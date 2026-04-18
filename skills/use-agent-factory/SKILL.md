@@ -40,6 +40,10 @@ The chain is:
 
 `issue -> needs-spec -> spec-refiner -> plan-worthy OR direct route OR blocked -> plan-merged-dispatcher -> implementer-dispatcher -> PR review -> merge -> learn`
 
+There is also a manual shortcut:
+
+`issue -> needs-plan -> trigger-plan -> ready-for-implementation -> implementer-dispatcher`
+
 ### Path 1: Plan-worthy
 
 Use this for most non-trivial work.
@@ -96,7 +100,7 @@ If a human wants Claude or Codex, do that handoff outside the automated path aft
 | Label | What it means | Operator move |
 |-------|---------------|---------------|
 | `needs-spec` | issue is waiting for spec refinement | wait for `spec-refiner` |
-| `needs-plan` | plan PR is open | review and merge the plan PR |
+| `needs-plan` | plan PR is open, or the issue is using the manual skip-spec shortcut | review the plan PR if one exists; otherwise let `trigger-plan` activate the issue |
 | `ready-for-implementation` | source issue is ready for assignment | wait for `implementer-dispatcher` |
 | `assigned-to-agent` | source issue has been dispatched | wait for the implementation PR |
 | `ai-reviewed` | reviewer found no blockers | ready for human merge review |
@@ -115,6 +119,16 @@ If a human wants Claude or Codex, do that handoff outside the automated path aft
 Check whether the issue was direct-routed instead. If it now has `assigned-to-agent`, `ready-for-implementation`, and a comment explaining the fast track, that is expected.
 
 If neither a plan PR nor a direct-route comment exists, inspect the failed workflow run and the issue comments for missing setup or `NEEDS HUMAN INPUT`.
+
+### Issue was labeled `needs-plan` directly
+
+That is a supported operator shortcut. `trigger-plan` should activate the issue into `ready-for-implementation`.
+
+If the issue stays on `needs-plan`, check which of these cases applies:
+
+- a merged plan file exists and `trigger-plan` is trying to recover the checklist path
+- a plan PR is still in flight and `spec-refined` is present
+- the workflow failed before it could activate the issue
 
 ### Reviewer did not post a verdict
 

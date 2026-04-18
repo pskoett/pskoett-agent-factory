@@ -15,7 +15,7 @@ The tested flow is:
 1. Triage the issue.
 2. `spec-refiner` classifies the issue as plan-worthy, direct-route, or blocked.
 3. For plan-worthy work, open and merge a plan PR.
-4. Activate the source issue from the merged plan, or assign trivial work directly.
+4. Activate the source issue from the merged plan, from a manual `needs-plan` shortcut, or assign trivial work directly.
 5. Dispatch the source issue to an implementer when the plan-worthy path continues.
 6. Review the implementation PR.
 7. Learn from failures and harden the system.
@@ -187,7 +187,8 @@ Every agent-backed workflow run also uploads an `agent` artifact containing the 
 |----------|---------|-------|
 | `spec-refiner` | Issue labeled `needs-spec` | creates a plan PR for non-trivial work, direct-routes trivial work, or blocks for human input |
 | `plan-merged-dispatcher` | Merged plan PR | plain Actions workflow, activates source issue |
-| `implementer-dispatcher` | Issue labeled `ready-for-implementation` | auto-assigns only `impl:copilot` on the plan-worthy path |
+| `trigger-plan` | Issue labeled `needs-plan` | plain Actions workflow for manual skip-spec activation or merged-plan recovery |
+| `implementer-dispatcher` | Issue labeled `ready-for-implementation` | auto-assigns only `impl:copilot` after plan activation or the manual skip-spec shortcut |
 | `reviewer` | PR opened or updated | plan-aware review with implementer calibration, self-tamper guard, and behind-main detection |
 | `conflict-resolver` | PR labeled `needs-rebase` | merges `origin/main` into the PR branch when clean |
 | `contribution-checker` | PR opened or updated | checks repo process alignment |

@@ -11,6 +11,7 @@ It is still test-derived and not entirely stable yet.
 - Direct route is only for clearly bounded trivial work. When uncertain, use the plan-worthy path.
 - `spec-refiner` creates a plan PR under `docs/plans/plan-NNN-<slug>.md` for plan-worthy issues.
 - `plan-merged-dispatcher` activates the source issue after the plan PR merges.
+- `trigger-plan` activates the source issue when `needs-plan` is applied manually.
 - `implementer-dispatcher` auto-routes only `impl:copilot`.
 - If a maintainer wants Claude or Codex, that handoff happens outside the automated factory.
 - Plan PRs use non-closing source issue references.
@@ -32,3 +33,4 @@ It is still test-derived and not entirely stable yet.
 - If you add a plain Actions workflow or helper script, update both docs and installer copy logic.
 - Do not claim factory auto-routing exists for Claude or Codex. It does not in this template.
 - If the template ships hand-crafted evals under `.evals/`, make sure the installer and smoke test copy them too.
+- If `learning-aggregator-ci` downloads transcript artifacts, preserve `network: defaults`.

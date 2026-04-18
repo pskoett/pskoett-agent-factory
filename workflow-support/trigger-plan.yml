@@ -1,0 +1,111 @@
+name: Trigger Plan
+
+on:
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  activate:
+    if: github.event.label.name == 'needs-plan'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout plan files
+        uses: actions/checkout@v5
+        with:
+          sparse-checkout: docs/plans
+          sparse-checkout-cone-mode: false
+          token: ${{ secrets.GH_AW_AGENT_TOKEN }}
+
+      - name: Activate source issue
+        env:
+          GH_TOKEN: ${{ secrets.GH_AW_AGENT_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          set -euo pipefail
+
+          issue_json=$(gh issue view "$ISSUE_NUMBER" --json state,labels)
+          state=$(printf '%s' "$issue_json" | jq -r .state)
+          labels=$(printf '%s' "$issue_json" | jq -r '[.labels[].name] | join(",")')
+
+          if [ "$state" = "CLOSED" ]; then
+            echo "Issue #$ISSUE_NUMBER is closed. Skipping."
+            exit 0
+          fi
+
+          if printf '%s' "$labels" | grep -q "human-review"; then
+            echo "Issue #$ISSUE_NUMBER has human-review label. Skipping."
+            exit 0
+          fi
+
+          if printf '%s' "$labels" | grep -qE "(^|,)(ready-for-implementation|assigned-to-agent)(,|$)"; then
+            echo "Issue #$ISSUE_NUMBER already has ready-for-implementation or assigned-to-agent. Skipping."
+            exit 0
+          fi
+
+          issue_padded=$(printf '%03d' "$ISSUE_NUMBER")
+          plan_file=$(find docs/plans -maxdepth 1 -name "plan-${issue_padded}-*.md" 2>/dev/null | head -1 || true)
+
+          if [ -n "$plan_file" ]; then
+            echo "Found plan file: $plan_file. Running merged-plan recovery path."
+            plan_slug=$(basename "$plan_file" .md)
+            marker_begin="<!-- plan-checklist:${plan_slug}:begin -->"
+            marker_end="<!-- plan-checklist:${plan_slug}:end -->"
+
+            checklist=$(awk '
+              /^## Implementation Checklist[[:space:]]*$/ { grab=1; next }
+              grab && /^## / { exit }
+              grab { print }
+            ' "$plan_file")
+
+            if [ -n "$(printf '%s' "$checklist" | tr -d '[:space:]')" ]; then
+              current_body=$(gh issue view "$ISSUE_NUMBER" --json body --jq .body)
+
+              cleaned_body=$(printf '%s' "$current_body" \
+                | awk -v begin="$marker_begin" -v end="$marker_end" '
+                    index($0, begin) { skip=1; next }
+                    skip && index($0, end) { skip=0; next }
+                    !skip { print }
+                  ')
+
+              cleaned_body=$(printf '%s' "$cleaned_body" | awk '
+                /^[[:space:]]*$/ { blank++; next }
+                { for (i=0;i<blank;i++) print ""; blank=0; print }
+              ')
+
+              {
+                printf '%s\n' "$cleaned_body"
+                printf '\n%s\n' "$marker_begin"
+                printf '## Implementation Checklist (from %s)\n\n' "$plan_slug"
+                printf '%s\n' "$checklist"
+                printf '%s\n' "$marker_end"
+              } > /tmp/issue_body.md
+
+              gh issue edit "$ISSUE_NUMBER" --body-file /tmp/issue_body.md
+            else
+              echo "Plan file has no Implementation Checklist section. Activating without checklist."
+            fi
+
+            gh issue edit "$ISSUE_NUMBER" --remove-label needs-plan 2>/dev/null || true
+            gh issue edit "$ISSUE_NUMBER" --remove-label needs-spec 2>/dev/null || true
+            gh issue edit "$ISSUE_NUMBER" --add-label ready-for-implementation
+            echo "Activated issue #$ISSUE_NUMBER via merged-plan recovery."
+
+          elif printf '%s' "$labels" | grep -q "spec-refined"; then
+            echo "Issue #$ISSUE_NUMBER has spec-refined label. Plan PR is still in flight. Leaving for plan-merged-dispatcher."
+
+          else
+            echo "No plan file and no spec-refined label. Activating as skip-spec shortcut."
+
+            if ! printf '%s' "$labels" | grep -q "impl:copilot"; then
+              gh issue edit "$ISSUE_NUMBER" --add-label impl:copilot
+            fi
+
+            gh issue edit "$ISSUE_NUMBER" --remove-label needs-plan 2>/dev/null || true
+            gh issue edit "$ISSUE_NUMBER" --remove-label needs-spec 2>/dev/null || true
+            gh issue edit "$ISSUE_NUMBER" --add-label ready-for-implementation
+            echo "Activated issue #$ISSUE_NUMBER via skip-spec shortcut."
+          fi
