@@ -33,7 +33,7 @@ When editing this repository, use these paths:
 - `scripts/check-workflow-lock-sync.sh`: helper used by the lock-sync workflow
 - `scripts/smoke-test-install.sh`: installs the template into a temporary repo and verifies the generated layout
 - `install.sh`: installs the factory into a target repository
-- `README.md`, `docs/AGENT_FACTORY.md`, `docs/chain.md`: operator-facing documentation
+- `README.md`, `docs/AGENT_FACTORY.md`, `docs/chain.md`, `docs/FACTORY_STATE_MACHINE.md`: operator-facing documentation
 - `CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`: harness files updated by the learning loop
 
 ## Agent Roles
@@ -78,7 +78,7 @@ When editing this repository, use these paths:
 6. **Keep the harness files aligned.** When a durable rule changes, update `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
 7. **Keep the installer aligned with the file layout.** If you add or rename workflows, support files, scripts, or labels, update `install.sh`.
 8. **Keep the permanent smoke test aligned with the installer.** If you change installation behavior or installed file layout, update `scripts/smoke-test-install.sh` and the source-repo CI workflow.
-9. **Keep the docs aligned with the actual flow.** At minimum, update `README.md`, `docs/AGENT_FACTORY.md`, and `docs/chain.md` together when the flow changes.
+9. **Keep the docs aligned with the actual flow.** At minimum, update `README.md`, `docs/AGENT_FACTORY.md`, `docs/chain.md`, and `docs/FACTORY_STATE_MACHINE.md` together when the flow or operator model changes.
 
 ## Skills
 

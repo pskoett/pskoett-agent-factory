@@ -46,6 +46,7 @@ This repo is a template source, not a live installed factory:
 - [`skills/`](./skills) contains the vendored skill sources that `install.sh` copies into `.claude/skills/` in the target repo.
 - [`docs/AGENT_FACTORY.md`](./docs/AGENT_FACTORY.md) is the operator guide.
 - [`docs/chain.md`](./docs/chain.md) explains the chain and handoffs.
+- [`docs/FACTORY_STATE_MACHINE.md`](./docs/FACTORY_STATE_MACHINE.md) is the quick operator reference, including the optional Projects board model.
 - [`install.sh`](./install.sh) installs the factory into another repository.
 
 ## Factory Chain
@@ -150,7 +151,7 @@ Plain GitHub Actions support workflows:
 - [`workflow-support/plan-merged-dispatcher.yml`](./workflow-support/plan-merged-dispatcher.yml)
 - [`workflow-support/lock-file-sync.yml`](./workflow-support/lock-file-sync.yml)
 
-The current template still does **not** auto-install any Projects board sync workflow because those workflows are usually tied to repo-specific Projects v2 IDs and PAT configuration. Port that only as a project-specific customization after installation.
+This template still does **not** auto-install any Projects board sync workflow because those workflows are usually tied to repo-specific Projects v2 IDs, field IDs, and PAT configuration. If you want the same board-style operator view, treat it as an optional project-level customization after installation. The generic setup model is documented in [`docs/AGENT_FACTORY.md`](./docs/AGENT_FACTORY.md) and [`docs/FACTORY_STATE_MACHINE.md`](./docs/FACTORY_STATE_MACHINE.md).
 
 ## Skills
 

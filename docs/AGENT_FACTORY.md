@@ -248,6 +248,16 @@ These labels are created by `install.sh` because the workflows rely on them:
 | `plan-file`, `ci-fix`, `self-improvement`, `workflow-health` | factory provenance |
 | `automation`, `low-risk`, `pr-fix` | routine automation labels |
 
+### Optional Projects-board labels
+
+These labels are **not** created by `install.sh` because the board layer is optional and repo-specific:
+
+| Label | Purpose |
+|-------|---------|
+| `your-turn` | derived lane marker for items that need human action |
+| `agent-working` | activity marker while a factory workflow is actively running |
+| `model:<name>` | optional activity label showing the running workflow's `engine.model` |
+
 ## New Guardrails
 
 ### Reviewer Self-Tamper Guard
@@ -268,9 +278,69 @@ That rule exists because those files can directly alter the reviewer's own behav
 
 Agent-backed workflows upload an `agent` artifact that contains the session transcript, tool outputs, and token usage. `learning-aggregator-ci` analyzes those artifacts weekly, then routes transcript-only patterns back into `self-improvement-meta` using `**TRANSCRIPT CANDIDATE**` markers.
 
-### Project-Specific Optional Feature
+## Optional GitHub Projects Board
 
-A Projects v2 status sync workflow may exist in a reference deployment. It is intentionally not auto-installed by this template because it depends on repo-specific project IDs and PAT scopes. Treat that as a project-level customization, not a factory default.
+Some operators want a board-level view of the factory state. That works well, but it must stay a visualization layer only.
+
+Labels remain authoritative. The board is derived and read-only. Do not drag cards to change state. Change labels and let the board follow.
+
+This template does **not** install board-sync workflows by default because they depend on repo-specific project URLs, field IDs, option IDs, and PAT configuration. Add them only as a project-level customization after installation.
+
+### Suggested lanes
+
+Use the built-in `Status` field with four lanes:
+
+| Status | Meaning |
+|--------|---------|
+| `Waiting for spec` | new issue or work not yet picked up by the factory |
+| `Factory building` | plan or implementation automation is in progress |
+| `Your turn` | a human needs to review, unblock, merge, or re-dispatch |
+| `Done` | issue or PR is closed |
+
+### Suggested label-to-lane mapping
+
+Evaluate top-down. The first matching rule wins:
+
+| Priority | Condition | Lane |
+|----------|-----------|------|
+| 1 | item is closed | `Done` |
+| 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file` | `Your turn` |
+| 3 | is an open PR with no stronger signal | `Your turn` |
+| 4 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
+| 5 | everything else | `Waiting for spec` |
+
+If you implement this board layer, the `your-turn` label can mirror the `Your turn` lane so issue and PR lists can be filtered the same way as the board.
+
+### Optional activity labels
+
+If you add a companion activity tracker workflow, it can apply:
+
+- `agent-working` while at least one factory workflow run is in progress on the item
+- `model:<name>` for the running workflow's configured model, such as `model:gpt-5.4`
+
+These labels are useful for visibility, but they are not part of the control plane. The factory should continue to function without them.
+
+### Generic setup model
+
+If you want this board layer in a target repo:
+
+1. Create a GitHub Projects v2 board for the repo owner.
+2. Rename the built-in `Status` field options to match the four lanes above.
+3. Capture the project URL, the `Status` field ID, and the option IDs for the four lanes.
+4. Create a `PROJECTS_PAT` Actions secret with the required Projects scopes. `GITHUB_TOKEN` is not enough for Projects v2 writes.
+5. Enable the project's built-in auto-add behavior so new issues and PRs appear on the board automatically.
+6. Create the supporting labels `your-turn` and `agent-working`. Let `model:<name>` be created on demand if your implementation supports that.
+7. Add plain GitHub Actions workflows for board sync and activity tracking, populated with the repo-specific IDs from step 3.
+8. Run an initial reconcile to backfill existing open work.
+
+### Guard rails
+
+- Keep the board one-way. Labels should drive the board, not the reverse.
+- Treat project IDs, field IDs, option IDs, and PAT setup as per-repo configuration. Do not hardcode reference values into a shared template.
+- Accept that activity tracking may miss very short runs if it relies on polling. That is fine for a visualization layer.
+- Keep these workflows out of the default installer unless you are ready to parameterize their repo-specific configuration.
+
+See [`FACTORY_STATE_MACHINE.md`](FACTORY_STATE_MACHINE.md) for the operator-facing quick reference version of this model.
 
 ## Operator Notes
 

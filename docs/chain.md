@@ -158,6 +158,14 @@ Two parts of the tested flow are better as plain GitHub Actions:
 
 These jobs are infrastructure glue, not reasoning-heavy agent work.
 
+## Optional Projects View
+
+Some installations also add a GitHub Projects v2 board as a read-only visualization layer on top of the label state machine.
+
+That board is optional and is **not** installed by this template by default. The factory still runs entirely from labels, PRs, comments, and plan files. If you add the board later, keep labels authoritative and let the board derive from them.
+
+See [`AGENT_FACTORY.md`](AGENT_FACTORY.md) for the generic setup model and [`FACTORY_STATE_MACHINE.md`](FACTORY_STATE_MACHINE.md) for the label-to-lane reference.
+
 ## Transcript Feedback
 
 The current chain also has an explicit observability loop:
