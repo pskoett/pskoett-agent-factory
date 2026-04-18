@@ -57,7 +57,7 @@ echo ""
 
 info "Copying helper scripts..."
 mkdir -p scripts
-for script in "$SCRIPT_DIR"/scripts/*; do
+for script in "$SCRIPT_DIR"/scripts/check-workflow-lock-sync.sh; do
   [ -f "$script" ] || continue
   name=$(basename "$script")
   if [ -f "scripts/$name" ]; then
