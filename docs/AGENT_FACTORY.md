@@ -275,6 +275,6 @@ A Projects v2 status sync workflow may exist in a reference deployment. It is in
 ## Operator Notes
 
 - If you change any installed `.github/workflows/*.md` file, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
-- If you want to re-dispatch an already assigned issue, remove both `assigned-to-agent` and `ready-for-implementation`, then re-add `ready-for-implementation`.
+- If you want to re-dispatch an already assigned issue, remove `assigned-to-agent` if it is present, then re-add `ready-for-implementation`.
 - If you want Claude or Codex to implement the issue, swap the `impl:*` label after reviewing the plan PR and hand the issue off manually.
 - Expect this guide to keep changing while the flow stabilizes further.

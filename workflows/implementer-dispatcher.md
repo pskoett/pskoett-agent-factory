@@ -22,6 +22,9 @@ safe-outputs:
   add-labels:
     allowed: [assigned-to-agent]
     max: 1
+  remove-labels:
+    allowed: [ready-for-implementation]
+    max: 1
 ---
 
 # Implementer Dispatcher
@@ -44,7 +47,7 @@ Why: the GitHub REST API path available to workflows accepts Copilot as a valid 
 
 ### Step 2: Assign the issue
 
-Use `assign-to-agent` to assign this issue to the Copilot cloud agent. Add the `assigned-to-agent` label. Post a brief comment: `Assigned to Copilot cloud agent based on label impl:copilot.`
+Use `assign-to-agent` to assign this issue to the Copilot cloud agent. Add the `assigned-to-agent` label and remove the `ready-for-implementation` label so the visible stage stays current. Post a brief comment: `Assigned to Copilot cloud agent based on label impl:copilot.`
 
 ## Noop conditions
 
