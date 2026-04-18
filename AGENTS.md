@@ -8,13 +8,15 @@ This repository is a **template source** for a GitHub agent factory. It is not t
 
 This repo packages a tested agent-factory pattern built on [GitHub Agentic Workflows (gh-aw)](https://github.github.com/gh-aw/).
 
+This template still tracks an actively changing test project and is not entirely stable yet. Expect workflow and doc updates as the test factory evolves.
+
 The tested flow is:
 
 1. Triage the issue.
-2. Refine a spec into a plan PR.
-3. Merge the plan PR.
-4. Activate the source issue directly.
-5. Dispatch the source issue to an implementer.
+2. `spec-refiner` classifies the issue as plan-worthy, direct-route, or blocked.
+3. For plan-worthy work, open and merge a plan PR.
+4. Activate the source issue from the merged plan, or assign trivial work directly.
+5. Dispatch the source issue to an implementer when the plan-worthy path continues.
 6. Review the implementation PR.
 7. Learn from failures and harden the system.
 
@@ -70,9 +72,10 @@ When editing this repository, use these paths:
 2. **Do not reintroduce sequential plan numbering.**
 3. **Plan PRs must reference the source issue with `Refs #N`, not a closing keyword.**
 4. **Only `impl:copilot` auto-routes today.** `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` are manual hand-off labels because the workflow-available REST API path silently drops Partner Agent assignees.
-5. **Keep the harness files aligned.** When a durable rule changes, update `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
-6. **Keep the installer aligned with the file layout.** If you add or rename workflows, support files, scripts, or labels, update `install.sh`.
-7. **Keep the docs aligned with the actual flow.** At minimum, update `README.md`, `docs/AGENT_FACTORY.md`, and `docs/chain.md` together when the flow changes.
+5. **Direct route is only for clearly bounded trivial work.** When uncertain, bias toward the plan-worthy path.
+6. **Keep the harness files aligned.** When a durable rule changes, update `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
+7. **Keep the installer aligned with the file layout.** If you add or rename workflows, support files, scripts, or labels, update `install.sh`.
+8. **Keep the docs aligned with the actual flow.** At minimum, update `README.md`, `docs/AGENT_FACTORY.md`, and `docs/chain.md` together when the flow changes.
 
 ## Skills
 
@@ -170,7 +173,7 @@ The factory retains multiple implementer labels, but platform reality matters mo
 **Copilot cloud agent**
 - Only auto-routable implementer in this factory
 - Selected via `impl:copilot`
-- Dispatched by `implementer-dispatcher`
+- Dispatched by `implementer-dispatcher` or directly by `spec-refiner` on the direct route
 - Works because the available workflow assignment path supports Copilot
 
 ### Manual labels
@@ -190,9 +193,9 @@ The factory retains multiple implementer labels, but platform reality matters mo
 
 | Workflow | Trigger | Notes |
 |----------|---------|-------|
-| `spec-refiner` | Issue labeled `needs-spec` | creates plan PR and applies `impl:copilot` |
+| `spec-refiner` | Issue labeled `needs-spec` | creates a plan PR for non-trivial work, direct-routes trivial work, or blocks for human input |
 | `plan-merged-dispatcher` | Merged plan PR | plain Actions workflow, activates source issue |
-| `implementer-dispatcher` | Issue labeled `ready-for-implementation` | auto-assigns only `impl:copilot` |
+| `implementer-dispatcher` | Issue labeled `ready-for-implementation` | auto-assigns only `impl:copilot` on the plan-worthy path |
 | `reviewer` | PR opened or updated | plan-aware review with implementer calibration, self-tamper guard, and behind-main detection |
 | `conflict-resolver` | PR labeled `needs-rebase` | merges `origin/main` into the PR branch when clean |
 | `contribution-checker` | PR opened or updated | checks repo process alignment |

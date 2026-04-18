@@ -26,7 +26,7 @@ safe-outputs:
 
 # Implementer Dispatcher
 
-You auto-assign issues to the Copilot cloud agent based on the issue's implementer label. The `ready-for-implementation` label is applied directly to the source issue by `plan-merged-dispatcher` after the plan PR merges. There is no sub-issue layer.
+You auto-assign issues to the Copilot cloud agent based on the issue's implementer label. On the plan-worthy path, `ready-for-implementation` is applied to the source issue by `plan-merged-dispatcher` after the plan PR merges. On the direct route, `spec-refiner` assigns Copilot in the same run and bypasses this workflow entirely. There is no sub-issue layer.
 
 ## Routing model
 

@@ -1,8 +1,12 @@
 # Agent Factory
 
-This repository packages the agent factory pattern that was tested in `measuring-ai-proficiency` and distilled into a reusable template.
+This repository packages the agent factory pattern extracted from `measuring-ai-proficiency` and reshaped into a reusable template.
 
-The important update is structural: the source issue is the unit of work end-to-end. The factory no longer depends on `/plan` creating sub-issues.
+## Status
+
+This template is still derived from an actively changing test factory. It is **not entirely stable yet**.
+
+Use it as a strong starting point, not as a frozen contract. Workflow prompts, handoff rules, labels, and installer behavior may still change when the test project discovers a better flow.
 
 ## End-To-End Chain
 
@@ -18,16 +22,30 @@ human adds "needs-spec"
   v
 spec-refiner
   |
-  v
-human reviews and merges the plan PR
+  +---> plan-worthy
+  |       |
+  |       v
+  |     plan PR
+  |       |
+  |       v
+  |     human reviews and merges the plan PR
+  |       |
+  |       v
+  |     plan-merged-dispatcher
+  |       |
+  |       v
+  |     implementer-dispatcher
   |
-  v
-plan-merged-dispatcher
+  +---> direct route
+  |       |
+  |       v
+  |     Copilot assigned directly in the same run
   |
-  v
-implementer-dispatcher
-  |
-  v
+  +---> blocked or terminal
+          |
+          v
+        blocked-on-human
+
 PR opened
   |
   +---> reviewer
@@ -40,6 +58,8 @@ PR opened
   v
 pr-fix / ci-cleaner / self-improvement-meta
 ```
+
+The source issue is still the unit of work end-to-end. There is no `/plan` fan-out and no sub-issue layer.
 
 ## Why The Flow Changed
 
@@ -55,7 +75,8 @@ The current flow fixes those problems:
 - plan filenames derive from the source issue number
 - plan PRs reference the source issue with `Refs #N`, not `Fixes #N`
 - merged plans write their checklist back onto the source issue body
-- the source issue itself gets `ready-for-implementation`
+- trivial issues can skip the plan PR when they are clearly bounded
+- the source issue itself gets routed or blocked directly
 - only `impl:copilot` is auto-routed
 - reviewer marks PRs that are behind `main` with `needs-rebase`
 - reviewer refuses to self-review PRs that modify its own instructions or adjacent guardrails
@@ -94,7 +115,7 @@ Apply these in the target repository:
 
 | Setting | Value | Why |
 |---------|-------|-----|
-| Workflow permissions | Read and write permissions | Workflows need to open PRs, edit issues, and move labels |
+| Workflow permissions | Read and write permissions | Workflows need to open PRs, edit issues, move labels, and push fixes |
 | Allow PR creation | Enabled | `ci-cleaner` and `self-improvement-meta` open PRs |
 | Copilot cloud agent | Enabled | Required for `impl:copilot` routing |
 | Copilot code review | Enabled | Useful for inline review on PRs |
@@ -127,13 +148,50 @@ The installer copies all workflow sources, support workflows, skills, harness fi
 
 1. Open an issue in the target repo.
 2. Add `needs-spec`.
-3. `spec-refiner` opens a plan PR under `docs/plans/plan-NNN-<slug>.md`, where `NNN` is the source issue number.
-4. Review the plan PR.
-5. Merge the plan PR.
-6. `plan-merged-dispatcher` writes the implementation checklist back to the source issue body and adds `ready-for-implementation`.
-7. `implementer-dispatcher` auto-assigns the source issue if it carries `impl:copilot`.
-8. The coding agent opens a PR.
-9. Review workflows annotate that PR.
+3. `spec-refiner` classifies the issue into one of three paths.
+
+### Path 1: Plan-worthy
+
+This is still the default path for anything non-trivial.
+
+1. `spec-refiner` opens a plan PR under `docs/plans/plan-NNN-<slug>.md`, where `NNN` is the source issue number.
+2. The plan PR must reference the source issue with `Refs #NN`. It must not use closing keywords.
+3. A human reviews the plan PR and may swap the implementer label before merge.
+4. The plan PR merges.
+5. `plan-merged-dispatcher` writes the implementation checklist back into the source issue body and adds `ready-for-implementation`.
+6. `implementer-dispatcher` auto-assigns the source issue if it carries `impl:copilot`.
+
+### Path 2: Direct route
+
+This path exists for clearly bounded trivial work only.
+
+Use it only when **all** of these are true:
+
+- the change is small and obvious
+- the acceptance criteria are fully specified in the issue
+- no design decision is needed
+- an implementer can start immediately without a plan
+
+On this path, `spec-refiner`:
+
+- skips the plan file
+- removes `needs-spec`
+- adds `impl:copilot`, `ready-for-implementation`, and `assigned-to-agent`
+- assigns the Copilot cloud agent in the same run
+- leaves a short issue comment explaining the fast-track decision
+
+When uncertain, bias toward the plan-worthy path.
+
+### Path 3: Blocked or terminal
+
+This path covers:
+
+- issues already labeled `human-review`
+- issues that already have a linked plan
+- spam or duplicates
+- issues that need human input before any automation can proceed
+
+On this path, `spec-refiner` removes `needs-spec`, adds `blocked-on-human`, and posts a comment explaining what a human must do next.
 
 ## Implementer Routing
 
@@ -146,7 +204,7 @@ The factory keeps the old labels, but not all of them can be auto-routed.
 | `impl:claude-sonnet` | No | Manual hand-off outside the factory |
 | `impl:codex` | No | Manual hand-off outside the factory |
 
-`spec-refiner` always applies `impl:copilot` by default because that is the only route the factory can actually complete without human intervention. Claude and Codex may appear in the GitHub UI assignees picker, but the workflow-available REST path does not reliably assign them.
+`spec-refiner` defaults to `impl:copilot` because that is the only route the factory can currently complete automatically. Claude and Codex may appear in the GitHub UI assignees picker, but the workflow-available REST path does not reliably assign them.
 
 ## Workflow Inventory
 
@@ -190,25 +248,6 @@ These labels are created by `install.sh` because the workflows rely on them:
 | `plan-file`, `ci-fix`, `self-improvement`, `workflow-health` | factory provenance |
 | `automation`, `low-risk`, `pr-fix` | routine automation labels |
 
-## Supporting Files
-
-The tested flow depends on two non-gh-aw support pieces:
-
-### `plan-merged-dispatcher.yml`
-
-This is the key structural change. It activates the source issue after plan PR merge by:
-
-1. locating merged plan files
-2. extracting the `## Implementation Checklist` section
-3. writing that checklist into the source issue body inside stable markers
-4. moving `needs-plan` to `ready-for-implementation`
-
-### `lock-file-sync.yml`
-
-This guards the compiled `.lock.yml` files. It exists because stale lock files caused real drift during testing.
-
-The companion helper script is [`../scripts/check-workflow-lock-sync.sh`](../scripts/check-workflow-lock-sync.sh).
-
 ## New Guardrails
 
 ### Reviewer Self-Tamper Guard
@@ -238,3 +277,4 @@ Agent-backed workflows upload an `agent` artifact that contains the session tran
 - If you change any installed `.github/workflows/*.md` file, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
 - If you want to re-dispatch an already assigned issue, remove both `assigned-to-agent` and `ready-for-implementation`, then re-add `ready-for-implementation`.
 - If you want Claude or Codex to implement the issue, swap the `impl:*` label after reviewing the plan PR and hand the issue off manually.
+- Expect this guide to keep changing while the test factory stabilizes further.

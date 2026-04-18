@@ -1,6 +1,8 @@
 # Factory Chain
 
-This diagram reflects the tested agent-factory flow that now backs this template.
+This diagram reflects the current tested agent-factory flow behind this template.
+
+It is still evolving. Treat it as the latest known working model, not a permanent contract.
 
 ## Layered View
 
@@ -54,26 +56,47 @@ human adds needs-spec
   v
 spec-refiner
   |
-  | writes docs/plans/plan-NNN-<slug>.md
-  | where NNN is the source issue number
-  | adds impl:copilot and needs-plan
-  v
-human reviews and merges the plan PR
+  +--> plan-worthy
+  |     |
+  |     | writes docs/plans/plan-NNN-<slug>.md
+  |     | where NNN is the source issue number
+  |     | adds impl:copilot and needs-plan
+  |     v
+  |   human reviews and merges the plan PR
+  |     |
+  |     v
+  |   plan-merged-dispatcher
+  |     |
+  |     | extracts the Implementation Checklist
+  |     | writes it into the source issue body
+  |     | removes needs-plan
+  |     | adds ready-for-implementation
+  |     v
+  |   implementer-dispatcher
+  |     |
+  |     | reads impl:* on the source issue
+  |     | auto-assigns only impl:copilot
+  |     v
+  |   coding agent opens PR
   |
-  v
-plan-merged-dispatcher
+  +--> direct route
+  |     |
+  |     | skips the plan PR
+  |     | adds impl:copilot
+  |     | adds ready-for-implementation and assigned-to-agent
+  |     | assigns Copilot in the same run
+  |     v
+  |   coding agent opens PR
   |
-  | extracts the Implementation Checklist
-  | writes it into the source issue body
-  | removes needs-plan
-  | adds ready-for-implementation
-  v
-implementer-dispatcher
-  |
-  | reads impl:* on the source issue
-  | auto-assigns only impl:copilot
-  v
-coding agent opens PR
+  +--> blocked or terminal
+        |
+        | removes needs-spec
+        | adds blocked-on-human
+        | posts a human handoff comment
+        v
+      human action required
+
+PR opened
   |
   +--> reviewer
   +--> contribution-checker
@@ -100,7 +123,7 @@ The factory still uses `impl:*` labels, but only one of them is truly automatabl
 
 | Label | Behavior |
 |-------|----------|
-| `impl:copilot` | auto-assigned by `implementer-dispatcher` |
+| `impl:copilot` | auto-assigned by `implementer-dispatcher` or directly by `spec-refiner` on the direct route |
 | `impl:claude-opus` | manual hand-off |
 | `impl:claude-sonnet` | manual hand-off |
 | `impl:codex` | manual hand-off |
@@ -117,6 +140,14 @@ The older `/plan` plus sub-issue layer looked elegant on paper and failed in the
 - sub-issue assignment added another state machine to debug
 
 The source-issue-centric model is less clever and more reliable.
+
+## Why Direct Route Exists
+
+Not every issue deserves a plan PR.
+
+For clearly bounded trivial work, the extra plan handoff adds delay without adding much signal. The direct route exists to keep the simple path simple while preserving the plan-first path for ambiguous or risky work.
+
+The rule is conservative on purpose: when uncertain, choose the plan-worthy path.
 
 ## Why The Plain Actions Workflows Exist
 
@@ -135,3 +166,7 @@ The current chain also has an explicit observability loop:
 - `learning-aggregator-ci` analyzes them weekly
 - transcript-only patterns are routed back into `self-improvement-meta`
 - promoted rules land in the harness files and workflow prompts
+
+## Stability Note
+
+This template is still tracking a live test factory. The diagrams and handoff rules here are accurate to the latest sync, but more changes are likely before the factory can be called stable.

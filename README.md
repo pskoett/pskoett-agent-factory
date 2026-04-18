@@ -2,19 +2,21 @@
 
 An agent factory template for GitHub repositories, built on [GitHub Agentic Workflows (gh-aw)](https://github.github.com/gh-aw/).
 
-This repository started as the extracted pattern behind [`pskoett/measuring-ai-proficiency`](https://github.com/pskoett/measuring-ai-proficiency). The flow here now reflects the version that actually held up in testing.
+## Status
 
-## What Changed After Testing
+This repository is still very much a **test project template** extracted from [`pskoett/measuring-ai-proficiency`](https://github.com/pskoett/measuring-ai-proficiency).
 
-The factory no longer relies on `/plan` plus sub-issues.
+It is **not entirely stable yet**. The flow, prompts, labels, and installer behavior are still being adjusted as the test factory keeps changing. Treat this repo as an evolving baseline, not a finished production product.
 
-The source issue is now the unit of work from start to finish:
+## Current Factory Shape
 
-1. `spec-refiner` writes a plan PR whose filename is derived from the source issue number.
-2. The plan PR uses a non-closing source issue reference such as `Refs #61`.
-3. When that PR merges, `plan-merged-dispatcher` writes the implementation checklist back onto the source issue body.
-4. The source issue receives `ready-for-implementation`.
-5. `implementer-dispatcher` auto-assigns that same source issue.
+The source issue is the unit of work from start to finish. The factory no longer relies on `/plan` plus sub-issues.
+
+`spec-refiner` now has three paths:
+
+1. **Plan-worthy**: open a plan PR, wait for merge, then dispatch the source issue.
+2. **Direct route**: for clearly bounded trivial work, assign Copilot directly without a plan PR.
+3. **Blocked or terminal**: hand the issue back to a human with `blocked-on-human`.
 
 The practical consequences are simpler and more reliable:
 
@@ -26,7 +28,7 @@ The practical consequences are simpler and more reliable:
 
 Only `impl:copilot` auto-routes today. `impl:claude-opus`, `impl:claude-sonnet`, and `impl:codex` remain useful labels for manual hand-off, but the factory does not auto-assign them.
 
-Recent stabilizations from the test project are also included here:
+Recent stabilizations pulled from the test project:
 
 - `reviewer` auto-labels PRs that are behind `main` with `needs-rebase`
 - `reviewer` refuses to self-review PRs that modify its own instructions or adjacent guardrails
@@ -42,7 +44,7 @@ This repo is a template source, not a live installed factory:
 - [`workflow-support/`](./workflow-support) contains plain GitHub Actions workflows that the factory needs.
 - [`skills/`](./skills) contains the vendored skill sources that `install.sh` copies into `.claude/skills/` in the target repo.
 - [`docs/AGENT_FACTORY.md`](./docs/AGENT_FACTORY.md) is the operator guide.
-- [`docs/chain.md`](./docs/chain.md) explains the design.
+- [`docs/chain.md`](./docs/chain.md) explains the chain and handoffs.
 - [`install.sh`](./install.sh) installs the factory into another repository.
 
 ## Factory Chain
@@ -59,16 +61,30 @@ human adds "needs-spec"
   v
 spec-refiner
   |
-  v
-human reviews and merges the plan PR
+  +---> plan-worthy
+  |       |
+  |       v
+  |     plan PR
+  |       |
+  |       v
+  |     human reviews and merges
+  |       |
+  |       v
+  |     plan-merged-dispatcher
+  |       |
+  |       v
+  |     implementer-dispatcher
   |
-  v
-plan-merged-dispatcher
+  +---> direct route
+  |       |
+  |       v
+  |     Copilot assigned in the same run
   |
-  v
-implementer-dispatcher
-  |
-  v
+  +---> blocked or terminal
+          |
+          v
+        blocked-on-human
+
 PR opened
   |
   +---> reviewer
@@ -126,7 +142,7 @@ Plain GitHub Actions support workflows:
 - [`workflow-support/plan-merged-dispatcher.yml`](./workflow-support/plan-merged-dispatcher.yml)
 - [`workflow-support/lock-file-sync.yml`](./workflow-support/lock-file-sync.yml)
 
-The current template does **not** auto-install the Project board sync workflow from `measuring-ai-proficiency` because that workflow is tied to repo-specific Projects v2 IDs and PAT configuration. If you want it, port it as a project-specific customization after installation.
+The current template still does **not** auto-install the Projects board sync workflow from `measuring-ai-proficiency` because that workflow is tied to repo-specific Projects v2 IDs and PAT configuration. Port it only as a project-specific customization after installation.
 
 ## Skills
 
@@ -146,6 +162,8 @@ The factory depends on these skill sources:
 
 - Plan filenames use the source issue number, not a sequential scan.
 - Plan PRs must not close the source issue.
+- Direct route is only for clearly bounded trivial work. When uncertain, bias toward a plan PR.
 - `impl:copilot` is the only label that auto-routes today.
 - If you edit a workflow source after installation, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
 - The lock-sync guard exists because stale compiled workflow files were a real source of drift during testing.
+- Expect this template to change again as the test project keeps evolving.

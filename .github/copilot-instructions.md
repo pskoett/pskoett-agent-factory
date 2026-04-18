@@ -2,10 +2,14 @@
 
 This repository is the source template for a GitHub agent factory.
 
+It is still test-derived and not entirely stable yet.
+
 ## Flow Facts
 
 - The source issue stays open through planning and implementation.
-- `spec-refiner` creates a plan PR under `docs/plans/plan-NNN-<slug>.md`.
+- `spec-refiner` classifies issues into a plan-worthy path, a direct route, or a blocked path.
+- Direct route is only for clearly bounded trivial work. When uncertain, use the plan-worthy path.
+- `spec-refiner` creates a plan PR under `docs/plans/plan-NNN-<slug>.md` for plan-worthy issues.
 - `plan-merged-dispatcher` activates the source issue after the plan PR merges.
 - `implementer-dispatcher` auto-routes only `impl:copilot`.
 - Plan PRs use non-closing source issue references.

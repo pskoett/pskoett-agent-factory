@@ -2,9 +2,13 @@
 
 This repository is the source template for the tested GitHub agent factory.
 
+It is still test-derived and not entirely stable yet.
+
 ## Core Facts
 
 - The source issue is the unit of work end-to-end.
+- `spec-refiner` has three paths: plan-worthy, direct route, or blocked.
+- Direct route is only for clearly bounded trivial work. When uncertain, use the plan-worthy path.
 - Plan files are named from the source issue number: `docs/plans/plan-NNN-<slug>.md`.
 - Plan PRs must reference the source issue with `Refs #N`, not closing keywords.
 - `plan-merged-dispatcher` writes the implementation checklist back onto the source issue body.

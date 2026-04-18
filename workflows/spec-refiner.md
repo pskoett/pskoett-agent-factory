@@ -24,9 +24,11 @@ safe-outputs:
     max: 1
     title-prefix: "[plan] "
     labels: [plan-file, automation]
+  assign-to-agent:
+    target-repo: ${{ github.repository }}
   add-labels:
-    allowed: [needs-plan, blocked-on-human, spec-refined, "impl:copilot"]
-    max: 3
+    allowed: [needs-plan, blocked-on-human, spec-refined, "impl:copilot", ready-for-implementation, assigned-to-agent]
+    max: 4
   remove-labels:
     allowed: [needs-spec]
     max: 1
@@ -34,15 +36,45 @@ safe-outputs:
 
 # Spec Refiner
 
-You are the front door of the agent factory. An issue has been labeled `needs-spec`. Your job is to turn it into a structured plan file that downstream agents can execute against.
+You are the front door of the agent factory. An issue has been labeled `needs-spec`. Your job is to classify the issue and hand it off to the right part of the chain.
 
-## Your skill
+## Classification
+
+Read the issue. Classify it as one of three paths before taking any other action.
+
+### Path 1: Plan-worthy
+
+An issue is plan-worthy when it requires multi-file changes, architectural decisions, non-obvious scope boundaries, or a checklist with more than two or three implementation steps. When in doubt, treat the issue as plan-worthy.
+
+### Path 2: Direct route
+
+An issue is suitable for direct routing when **all** of these are true:
+
+- The change is clearly bounded: one or two files, a config update, a dependency bump, or a small bug with an obvious fix.
+- The acceptance criteria are fully defined in the issue body.
+- No architectural decision or design tradeoff is needed.
+- An implementer can start without a plan.
+
+Typical examples: obvious typo fix, single failing test, dependency bump, one-line config change, clearly described single-file bug fix.
+
+**Bias toward Path 1 when uncertain.** If you cannot confidently tick all four criteria above, treat the issue as plan-worthy.
+
+### Path 3: Terminal or blocked
+
+An issue is terminal or blocked when:
+
+- It already has a linked plan file.
+- It is labeled `human-review`.
+- It is spam, a duplicate, or unclear beyond recovery.
+- It requires human input before any automated step can proceed.
+
+## Your skill (Path 1 only)
 
 Read `.claude/skills/plan-interview/SKILL.md` in full and follow its process. That file is your source of truth for how to run the interview, explore the codebase, and structure the plan file output.
 
 This is a single-shot gh-aw run, not a live session. Follow the skill's process, but when it expects to ask the user questions, apply rule 1 from the "Adapting skills for single-shot gh-aw runs" section of `AGENTS.md`: simulate the interview by answering from issue context, and mark anything you cannot answer with confidence using `**NEEDS HUMAN INPUT**` plus a specific question.
 
-## Implementer recommendation
+## Implementer recommendation (Path 1 only)
 
 Before writing the PR, append a `## Recommended implementer` section to the plan file.
 
@@ -59,11 +91,21 @@ Example:
 
 After writing the recommendation in the plan file, add the `impl:copilot` label to the source issue. A human can swap it to `impl:claude-opus`, `impl:claude-sonnet`, or `impl:codex` before merging if they want a manual UI assignment outside the factory.
 
-## gh-aw handoff logic
+## Handoff by path
 
-After the skill completes, the plan file is written, and the implementer is recommended:
+### Path 1: Plan-worthy
 
-1. **Open a PR** with the new plan file at `docs/plans/plan-NNN-<slug>.md` where NNN is the source issue number, zero-padded to at least three digits. Do not scan `docs/plans/` for the next sequential number. Title: `[plan] Plan NNN: <title>` using the same padded issue number. Body references the source issue with `Refs #NN`, not a closing keyword such as `Closes` or `Fixes`. The plan PR must not close the source issue on merge. The body also summarizes the key decisions and restates the implementer recommendation.
+1. **Open a PR** with the new plan file at `docs/plans/plan-NNN-<slug>.md` where NNN is the source issue number, zero-padded to at least three digits. Do not scan `docs/plans/` for the next sequential number. Title: `[plan] Plan NNN: <title>` using the same padded issue number.
+
+   **CRITICAL - plan PR body rules. Read every bullet. Re-read before writing the body:**
+
+   - Reference the source issue with exactly `Refs #NN` at the top.
+   - **NEVER** write `Closes #NN`, `Close #NN`, `Closed #NN`, `Fixes #NN`, `Fix #NN`, `Fixed #NN`, `Resolves #NN`, `Resolve #NN`, `Resolved #NN`, or any of these keywords anywhere in the body, even in sub-lists, footers, or checklists. GitHub auto-closes the linked issue on merge when it sees any of those keywords; a plan PR must not close its source issue.
+   - Do not include a `- Fixes #NN` bullet in any summary or changes section.
+   - Before finalizing the body, grep your own draft for `/\\b(close[sd]?|fix(es|ed)?|resolve[sd]?) #\\d/i`. If anything matches, rewrite it to `Refs #NN` or remove the line.
+   - Safe synonyms: `Refs #NN`, `For #NN`, `Part of #NN`, `Tracks #NN`, `See #NN`.
+
+   The body also summarizes the key decisions and restates the implementer recommendation.
 2. **Comment on the source issue** with a one-line summary, a link to the plan PR, and the recommended implementer.
 3. **Swap labels**:
    - Remove `needs-spec`
@@ -71,14 +113,30 @@ After the skill completes, the plan file is written, and the implementer is reco
    - Add `needs-plan` if the plan has no open questions. On merge of the plan PR, `plan-merged-dispatcher` reads the plan checklist, writes it onto the source issue body, and transitions `needs-plan` to `ready-for-implementation`.
    - Add `blocked-on-human` if the plan has any `**NEEDS HUMAN INPUT**` markers
 
-## Skip conditions
+### Path 2: Direct route
 
-Skip plan creation and call `noop` with a brief explanation comment when:
+No plan file. No plan PR. `spec-refiner` assigns Copilot directly in the same run, bypassing the label-triggered cascade that would otherwise block on GitHub's anti-loop rule for `GITHUB_TOKEN`.
 
-- The issue already has a linked plan file
-- The issue is labeled `human-review`
-- The skill's own criteria say this is not a plan-worthy task
-- The issue is spam or unclear beyond recovery
+1. **Comment on the source issue** with a short explanation: why this issue was fast-tracked without a plan, what the implementer should do, and that Copilot has been assigned directly.
+2. **Swap labels**:
+   - Remove `needs-spec`
+   - Add `impl:copilot`
+   - Add `ready-for-implementation`
+   - Add `assigned-to-agent`
+3. **Assign the issue**: call `assign-to-agent` to assign this issue to the Copilot cloud agent in the same run.
+
+### Path 3: Terminal or blocked
+
+No plan file. No implementation dispatch. A human must take the next action.
+
+1. **Comment on the source issue** with a clear explanation: why this issue cannot be automatically processed, and what a human must do to unblock it or that it should be closed.
+2. **Swap labels**:
+   - Remove `needs-spec`
+   - Add `blocked-on-human`
+
+Do not call bare `noop` for Path 3 issues. The comment and label swap are the handoff. `blocked-on-human` signals that human action is required. No issue should remain in `needs-spec` after this workflow has run.
+
+For confirmed spam or exact duplicates: post a comment recommending closure and add `blocked-on-human`. The human closes the issue.
 
 ## Style
 
