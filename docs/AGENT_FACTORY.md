@@ -310,9 +310,10 @@ Evaluate top-down. The first matching rule wins:
 |----------|-----------|------|
 | 1 | item is closed | `Done` |
 | 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file`, `eval-regression` | `Your turn` |
-| 3 | is an open PR with no stronger signal | `Your turn` |
-| 4 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
-| 5 | everything else | `Waiting for spec` |
+| 3 | is an open draft PR with no stronger signal | `Factory building` |
+| 4 | is an open PR with no stronger signal | `Your turn` |
+| 5 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
+| 6 | everything else | `Waiting for spec` |
 
 If you implement this board layer, the `your-turn` label can mirror the `Your turn` lane so issue and PR lists can be filtered the same way as the board.
 
@@ -336,12 +337,13 @@ If you want this board layer in a target repo:
 5. Enable the project's built-in auto-add behavior so new issues and PRs appear on the board automatically.
 6. Create the supporting labels `your-turn` and `agent-working`. Let `model:<name>` be created on demand if your implementation supports that.
 7. Add plain GitHub Actions workflows for board sync and activity tracking, populated with the repo-specific IDs from step 3.
-8. Run an initial reconcile to backfill existing open work.
+8. Run an initial reconcile to backfill existing board items.
 
 ### Guard rails
 
 - Keep the board one-way. Labels should drive the board, not the reverse.
 - Treat project IDs, field IDs, option IDs, and PAT setup as per-repo configuration. Do not hardcode reference values into a shared template.
+- If you add a reconcile sweep, have it iterate every board item already on the project rather than only the most recent repo issues or PRs. Old items otherwise keep stale lane values forever.
 - Accept that activity tracking may miss very short runs if it relies on polling. That is fine for a visualization layer.
 - Keep these workflows out of the default installer unless you are ready to parameterize their repo-specific configuration.
 

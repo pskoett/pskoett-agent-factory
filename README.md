@@ -147,11 +147,14 @@ Suggested lane mapping:
 |----------|-----------|------|
 | 1 | item is closed | `Done` |
 | 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file`, `eval-regression` | `Your turn` |
-| 3 | is an open PR with no stronger signal | `Your turn` |
-| 4 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
-| 5 | everything else | `Waiting for spec` |
+| 3 | is an open draft PR with no stronger signal | `Factory building` |
+| 4 | is an open PR with no stronger signal | `Your turn` |
+| 5 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
+| 6 | everything else | `Waiting for spec` |
 
 The board is optional. The factory works without it.
+
+If you add the board-sync workflow, make the scheduled reconcile sweep every board item already on the project, not just a recent-item window from the repo. Otherwise older issues and PRs can keep stale lane values forever.
 
 ## Installing Into A Target Repo
 

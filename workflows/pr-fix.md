@@ -24,17 +24,25 @@ tools:
 safe-outputs:
   push-to-pull-request-branch:
     allowed-files:
+      # Root-level patterns. `**/*.md` does not match files at the repo root.
+      # Root-level files like CLAUDE.md, AGENTS.md, and README.md need explicit
+      # root-level patterns.
+      - "*.py"
       - "*.md"
       - "*.yml"
       - "*.yaml"
       - "*.toml"
-      - "*.sh"
+      # Subdirectory patterns.
+      - "**/*.py"
+      - "**/*.md"
+      - "**/*.yml"
+      - "**/*.yaml"
       - "docs/**"
-      - "workflows/**"
-      - "workflow-support/**"
-      - "skills/**"
+      - "tests/**"
       - "scripts/**"
       - ".github/**"
+      - ".claude/**"
+      - ".evals/**"
       - ".learnings/**"
   create-issue:
     title-prefix: "${{ github.workflow }}"
@@ -54,15 +62,18 @@ source: githubnext/agentics/workflows/pr-fix.md@11c9a2c442e519ff2b427bf58679f5a5
 
 You are an AI assistant specialized in fixing pull requests with failing CI checks. Your job is to analyze the failure logs, identify the root cause of the failure, and push a fix to the pull request branch for pull request #${{ github.event.issue.number }} in the repository ${{ github.repository }}.
 
-1. Read the pull request and the comments.
+1. Read the pull request and the comments
 2. Take heed of these instructions: "${{ steps.sanitized.outputs.text }}"
-3. Check out the branch for the pull request and set up the development environment as needed.
-4. Formulate a plan to follow the instructions.
+
+  - If there are no particular instructions there, fix the PR based on CI failures. Analyze the failure logs from any failing workflow run associated with the pull request. Identify the specific error messages and relevant context. Determine the root cause before changing anything.
+
+3. Check out the branch for pull request #${{ github.event.issue.number }} and set up the development environment as needed.
+4. Formulate a plan to follow the instructions. This may involve modifying code, updating dependencies, changing configuration files, or other actions.
 5. Implement the changes needed to follow the instructions.
-6. Run the necessary tests and checks.
-7. Run formatters or linters used in the repo.
-8. If you made meaningful progress, push the changes to the pull request branch.
-9. Add a comment summarizing the changes and the reason for the fix.
+6. Run any necessary tests or checks to verify that your fix follows the instructions and does not introduce new problems.
+7. Run any code formatters or linters used in the repo to ensure your changes adhere to the project's coding standards and fix any new issues they identify.
+8. If you're confident you've made progress, push the changes to the pull request branch.
+9. Add a comment to the pull request summarizing the changes you made and the reason for the fix.
 
 ## Session capture
 

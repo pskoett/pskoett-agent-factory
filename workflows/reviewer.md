@@ -50,9 +50,9 @@ If the diff includes any of these files, apply the `human-review` label using `a
 
 ### Step 0: Check merge state
 
-Read the PR's merge state using the pull request metadata and inspect `mergeStateStatus`.
+Read the PR's merge state using the pull request metadata and inspect `mergeStateStatus`. Do this once before any other step.
 
-- If `mergeStateStatus` is `BEHIND`, apply the `needs-rebase` label. Record that you applied it so you can note it in the review comment. Continue with the rest of the review.
+- If `mergeStateStatus` is `BEHIND`, apply the `needs-rebase` label. Record that you applied it so you can note it in the review comment. Continue with the rest of the review. Do not skip or short-circuit the verdict.
 - If `mergeStateStatus` is anything else, do not add `needs-rebase`. Proceed normally.
 
 ### Step 1: Find the plan file
@@ -62,11 +62,11 @@ Look at the PR for a linked issue, a `plan-NNN` reference in the title or body, 
 Before using the plan file, check its `status` field in the YAML frontmatter at the top:
 
 - `status: active` - current design. Use as authoritative ground truth.
-- `status: shipped` - historical artifact. Use it as background context only and verify current state against the live code.
+- `status: shipped` - historical artifact. Use it as background context for understanding the original intent, but do not flag missing items as failures if the code already reflects the shipped state. Verify against the live code.
 - `status: superseded` - historical artifact. Check `superseded-by` for the replacement plan and do not enforce the superseded plan.
 - `status: abandoned` - historical artifact. Do not use as review criteria.
 
-Do not enforce a `shipped`, `superseded`, or `abandoned` plan as though it represents the current accepted design. If the plan file has no frontmatter yet, treat it as `active`.
+Do not enforce a `shipped`, `superseded`, or `abandoned` plan as though it represents the current accepted design. If the plan file has no frontmatter yet, treat it as `active` and proceed normally.
 
 If no plan file exists, note that in your review and proceed with a standard code review. Do not block the PR just because there is no plan file.
 

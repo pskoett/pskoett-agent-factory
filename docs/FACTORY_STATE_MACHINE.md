@@ -47,9 +47,10 @@ If you add a Projects v2 board, this four-lane model matches the tested flow wel
 |----------|-----------|------|
 | 1 | item is closed | `Done` |
 | 2 | has any of `needs-changes`, `needs-rebase`, `human-review`, `blocked-on-human`, `ai-reviewed`, `plan-file`, `eval-regression` | `Your turn` |
-| 3 | is an open PR with no stronger signal | `Your turn` |
-| 4 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
-| 5 | everything else | `Waiting for spec` |
+| 3 | is an open draft PR with no stronger signal | `Factory building` |
+| 4 | is an open PR with no stronger signal | `Your turn` |
+| 5 | has any of `ready-for-implementation`, `assigned-to-agent`, `needs-plan` | `Factory building` |
+| 6 | everything else | `Waiting for spec` |
 
 This is intentionally label-derived. Do not use the board as the source of truth.
 
@@ -76,7 +77,7 @@ Optional project-level additions:
 
 | Workflow | Trigger | Primary effect |
 |----------|---------|----------------|
-| board sync | issue or PR label/state changes, plus reconcile schedule | mirrors labels onto a Projects v2 `Status` field and can apply `your-turn` |
+| board sync | issue or PR label/state changes, plus reconcile schedule | mirrors labels onto a Projects v2 `Status` field, routes draft PRs to `Factory building`, can apply `your-turn`, and should reconcile every board item instead of only recent repo items |
 | activity tracker | periodic schedule | applies or removes `agent-working` and `model:<name>` |
 
 ## Happy path

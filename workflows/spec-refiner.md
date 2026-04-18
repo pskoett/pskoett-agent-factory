@@ -63,25 +63,25 @@ Typical examples: obvious typo fix, single failing test, dependency bump, one-li
 
 An issue is terminal or blocked when:
 
-- It already has a linked plan file.
-- It is labeled `human-review`.
+- It already has a linked plan file (no new plan needed).
+- It is labeled `human-review` (factory is paused for this issue).
 - It is spam, a duplicate, or unclear beyond recovery.
 - It requires human input before any automated step can proceed.
 
 ## Your skill (Path 1 only)
 
-Read `.claude/skills/plan-interview/SKILL.md` in full and follow its process. That file is your source of truth for how to run the interview, explore the codebase, and structure the plan file output.
+For Path 1 issues, read `.claude/skills/plan-interview/SKILL.md` in full and follow its process. That file is your source of truth for how to run the interview, explore the codebase, and structure the plan file output.
 
 This is a single-shot gh-aw run, not a live session. Follow the skill's process, but when it expects to ask the user questions, apply rule 1 from the "Adapting skills for single-shot gh-aw runs" section of `AGENTS.md`: simulate the interview by answering from issue context, and mark anything you cannot answer with confidence using `**NEEDS HUMAN INPUT**` plus a specific question.
 
 ## Plan file lifecycle
 
-Plan files in `docs/plans/` may carry YAML frontmatter with a `status` field. Before treating any plan as authoritative, check that status:
+Plan files in `docs/plans/` carry YAML frontmatter with a `status` field. Before treating any plan as authoritative, check its status:
 
 - `status: active`: current design. Treat as authoritative.
-- `status: shipped`: historical artifact. Use as background context only and verify current behavior against the code.
-- `status: superseded`: historical artifact. Check `superseded-by` for the replacement plan.
-- `status: abandoned`: historical artifact. Do not use as current design guidance.
+- `status: shipped`: historical. The plan was implemented. Use it as background context only and verify the current state against the code.
+- `status: superseded`: historical. A newer plan replaced it. Check the `superseded-by` field for the replacement.
+- `status: abandoned`: historical. Do not use as design reference.
 
 Do not quote or implement a `shipped`, `superseded`, or `abandoned` plan as though it describes the current system.
 
@@ -128,7 +128,7 @@ After writing the recommendation in the plan file, add the `impl:copilot` label 
 
 No plan file. No plan PR. `spec-refiner` assigns Copilot directly in the same run, bypassing the label-triggered cascade that would otherwise block on GitHub's anti-loop rule for `GITHUB_TOKEN`.
 
-1. **Comment on the source issue** with a short explanation: why this issue was fast-tracked without a plan, what the implementer should do, and that Copilot has been assigned directly.
+1. **Comment on the source issue** with a short explanation: why this issue was fast-tracked without a plan, what the implementer should do, and that Copilot has been assigned directly. Keep it to two or three sentences.
 2. **Swap labels**:
    - Remove `needs-spec`
    - Add `impl:copilot`
