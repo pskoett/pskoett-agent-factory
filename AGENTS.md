@@ -26,10 +26,12 @@ The source issue is the unit of work end-to-end. There is no `/plan` fan-out and
 
 When editing this repository, use these paths:
 
+- `.github/workflows/*.yml`: source-repo CI checks for the template itself
 - `workflows/*.md`: custom gh-aw workflow sources
 - `workflow-support/*.yml`: plain GitHub Actions support workflows
 - `skills/*/SKILL.md`: skill sources copied into `.claude/skills/` in installed repos
 - `scripts/check-workflow-lock-sync.sh`: helper used by the lock-sync workflow
+- `scripts/smoke-test-install.sh`: installs the template into a temporary repo and verifies the generated layout
 - `install.sh`: installs the factory into a target repository
 - `README.md`, `docs/AGENT_FACTORY.md`, `docs/chain.md`: operator-facing documentation
 - `CLAUDE.md`, `.github/copilot-instructions.md`, `AGENTS.md`: harness files updated by the learning loop
@@ -75,7 +77,8 @@ When editing this repository, use these paths:
 5. **Direct route is only for clearly bounded trivial work.** When uncertain, bias toward the plan-worthy path.
 6. **Keep the harness files aligned.** When a durable rule changes, update `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md`.
 7. **Keep the installer aligned with the file layout.** If you add or rename workflows, support files, scripts, or labels, update `install.sh`.
-8. **Keep the docs aligned with the actual flow.** At minimum, update `README.md`, `docs/AGENT_FACTORY.md`, and `docs/chain.md` together when the flow changes.
+8. **Keep the permanent smoke test aligned with the installer.** If you change installation behavior or installed file layout, update `scripts/smoke-test-install.sh` and the source-repo CI workflow.
+9. **Keep the docs aligned with the actual flow.** At minimum, update `README.md`, `docs/AGENT_FACTORY.md`, and `docs/chain.md` together when the flow changes.
 
 ## Skills
 

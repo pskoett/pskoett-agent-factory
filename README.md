@@ -40,6 +40,7 @@ Recent stabilizations included here:
 
 This repo is a template source, not a live installed factory:
 
+- [`.github/workflows/`](./.github/workflows) contains source-repo checks for the template itself.
 - [`workflows/`](./workflows) contains the custom gh-aw Markdown workflow sources.
 - [`workflow-support/`](./workflow-support) contains plain GitHub Actions workflows that the factory needs.
 - [`skills/`](./skills) contains the vendored skill sources that `install.sh` copies into `.claude/skills/` in the target repo.
@@ -119,6 +120,13 @@ The installer:
 - runs `gh aw compile`
 
 The full setup checklist, required secrets, and label reference live in [`docs/AGENT_FACTORY.md`](./docs/AGENT_FACTORY.md).
+
+## Permanent Verification
+
+This template repo now includes a permanent install smoke test:
+
+- [`scripts/smoke-test-install.sh`](./scripts/smoke-test-install.sh) creates a temporary git repo, installs the template into it, compiles the installed workflows, and verifies lock-file sync.
+- [`.github/workflows/template-smoke-test.yml`](./.github/workflows/template-smoke-test.yml) runs that smoke test on pushes to `main` and on pull requests.
 
 ## Included Workflows
 
