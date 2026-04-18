@@ -1,0 +1,37 @@
+name: Template Smoke Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install gh-aw extension
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh extension list | grep -q '^gh[[:space:]]\+aw[[:space:]]'; then
+            gh extension upgrade gh-aw
+          else
+            gh extension install githubnext/gh-aw
+          fi
+
+      - name: Validate source files
+        run: |
+          git diff --check
+          bash -n install.sh
+          bash -n scripts/check-workflow-lock-sync.sh
+          bash scripts/check-workflow-lock-sync.sh
+
+      - name: Run install smoke test
+        run: bash scripts/smoke-test-install.sh
