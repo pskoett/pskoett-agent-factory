@@ -23,7 +23,8 @@ warn()  { printf "${YELLOW}!!${NC} %s\n" "$*"; }
 error() { printf "${RED}xx${NC} %s\n" "$*" >&2; }
 
 command -v gh >/dev/null 2>&1 || { error "gh CLI not found. Install from https://cli.github.com"; exit 1; }
-gh extension list 2>/dev/null | grep -q "gh-aw" || { error "gh-aw extension not installed. Run: gh extension install github/gh-aw"; exit 1; }
+GH_EXTENSIONS="$(gh extension list 2>/dev/null || true)"
+[[ "$GH_EXTENSIONS" == *"gh-aw"* ]] || { error "gh-aw extension not installed. Run: gh extension install github/gh-aw"; exit 1; }
 git rev-parse --git-dir >/dev/null 2>&1 || { error "Not in a git repository"; exit 1; }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
