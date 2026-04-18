@@ -31,6 +31,8 @@ jobs:
           git diff --check
           bash -n install.sh
           bash -n scripts/check-workflow-lock-sync.sh
+          bash -n scripts/factory-smoke.sh
+          bash -n scripts/factory-e2e.sh
           bash scripts/check-workflow-lock-sync.sh
 
       - name: Run install smoke test

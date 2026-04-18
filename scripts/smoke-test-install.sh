@@ -70,6 +70,8 @@ info "Checking installed layout"
   assert_file ".evals/EVAL_INDEX.md"
   assert_file "docs/plans/README.md"
   assert_file "scripts/check-workflow-lock-sync.sh"
+  assert_file "scripts/factory-smoke.sh"
+  assert_file "scripts/factory-e2e.sh"
 
   for src in "$TEMPLATE_ROOT"/.evals/cases/*.md; do
     [ -e "$src" ] || continue

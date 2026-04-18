@@ -157,6 +157,7 @@ Two parts of the tested flow are better as plain GitHub Actions:
 
 - `plan-merged-dispatcher.yml` reacts to merge events and edits issue bodies
 - `trigger-plan.yml` handles direct `needs-plan` activation and merged-plan recovery
+- `factory-smoke.yml` gives operators a manual environment-level smoke run
 - `lock-file-sync.yml` validates compiled `.lock.yml` files
 
 These jobs are infrastructure glue, not reasoning-heavy agent work.

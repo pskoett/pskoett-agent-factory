@@ -146,6 +146,7 @@ git clone <template-repo-url> /tmp/agent-factory-template
 The installer copies all workflow sources, support workflows, skills, harness files, helper scripts, and any shipped `.evals/` content. It also creates the labels and runs `gh aw compile`.
 
 Installed target repos also receive the operator-facing `.claude/skills/use-agent-factory/SKILL.md` skill from this template's `skills/use-agent-factory/` source.
+Installed target repos also receive `scripts/factory-smoke.sh` and `scripts/factory-e2e.sh` as optional operator test harnesses.
 
 ## First Run
 
@@ -258,6 +259,7 @@ Plain GitHub Actions support workflows:
 | Workflow | File | Trigger |
 |----------|------|---------|
 | `plan-merged-dispatcher` | [`../workflow-support/plan-merged-dispatcher.yml`](../workflow-support/plan-merged-dispatcher.yml) | Merged plan PR touching `docs/plans/plan-*.md` |
+| `factory-smoke` | [`../workflow-support/factory-smoke.yml`](../workflow-support/factory-smoke.yml) | Manual operator smoke test that dispatches the safely-dispatchable workflows |
 | `lock-file-sync` | [`../workflow-support/lock-file-sync.yml`](../workflow-support/lock-file-sync.yml) | PR touching workflow sources or lock files |
 
 ## Labels
@@ -393,4 +395,6 @@ See [`FACTORY_STATE_MACHINE.md`](FACTORY_STATE_MACHINE.md) for the operator-faci
 
 - If you change any installed `.github/workflows/*.md` file, re-run `gh aw compile` in the target repo and commit the matching `.lock.yml`.
 - If you want to re-dispatch an already assigned issue, remove `assigned-to-agent` if it is present, then re-add `ready-for-implementation`.
+- Use `scripts/factory-smoke.sh` before and after factory changes when you want a fast environment-level regression check.
+- Use `scripts/factory-e2e.sh` when you want to exercise the label-driven chain with a disposable canary issue. The canary explicitly suppresses implementation and should end in `noop`, not a real code change.
 - Expect this guide to keep changing while the flow stabilizes further.

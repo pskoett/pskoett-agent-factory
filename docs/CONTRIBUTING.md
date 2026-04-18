@@ -32,6 +32,8 @@ Before opening a PR:
 ```bash
 bash -n install.sh
 bash -n scripts/check-workflow-lock-sync.sh
+bash -n scripts/factory-smoke.sh
+bash -n scripts/factory-e2e.sh
 ```
 
 ## Contribution Rules

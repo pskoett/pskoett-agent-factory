@@ -71,6 +71,7 @@ This is intentionally label-derived. Do not use the board as the source of truth
 | `self-improvement-meta` | nightly | promotes durable learnings into harness files and workflows |
 | `learning-aggregator-ci` | weekly | analyzes learnings and transcript artifacts for patterns |
 | `lock-file-sync` | PR touches workflow sources or lock files | fails on stale compiled workflow locks |
+| `factory-smoke` | manual dispatch | dispatches the safely-dispatchable workflows and reports smoke-level pass or fail |
 
 Optional project-level additions:
 

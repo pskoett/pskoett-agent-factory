@@ -32,6 +32,7 @@ When editing this repository, use these paths:
 - `skills/*/SKILL.md`: skill sources copied into `.claude/skills/` in installed repos
 - `scripts/check-workflow-lock-sync.sh`: helper used by the lock-sync workflow
 - `scripts/smoke-test-install.sh`: installs the template into a temporary repo and verifies the generated layout
+- `scripts/factory-smoke.sh`, `scripts/factory-e2e.sh`: optional operator test harnesses copied into installed repos
 - `install.sh`: installs the factory into a target repository
 - `.evals/EVAL_INDEX.md`, `.evals/cases/*.md`: regression checks derived from promoted learnings or hand-crafted guardrails
 - `README.md`, `docs/AGENT_FACTORY.md`, `docs/chain.md`, `docs/FACTORY_STATE_MACHINE.md`: operator-facing documentation

@@ -49,6 +49,7 @@ This repo is a template source, not a live installed factory:
 - [`workflow-support/`](./workflow-support) contains plain GitHub Actions workflows that the factory needs.
 - [`skills/`](./skills) contains the vendored skill sources that `install.sh` copies into `.claude/skills/` in the target repo.
 - [`.evals/`](./.evals) contains regression checks that installed repos receive when the template ships hand-crafted evals.
+- [`scripts/`](./scripts) contains template verification helpers plus installed operator test harnesses.
 - [`docs/AGENT_FACTORY.md`](./docs/AGENT_FACTORY.md) is the operator guide.
 - [`docs/chain.md`](./docs/chain.md) explains the chain and handoffs.
 - [`docs/FACTORY_STATE_MACHINE.md`](./docs/FACTORY_STATE_MACHINE.md) is the quick operator reference, including the optional Projects board model.
@@ -171,6 +172,7 @@ The installer:
 - copies `workflows/*.md` into `.github/workflows/`
 - copies `workflow-support/*.yml` into `.github/workflows/`
 - copies the lock-sync helper script into `scripts/`
+- copies the optional factory smoke and e2e harnesses into `scripts/`
 - vendors skills into `.claude/skills/`
 - copies `AGENTS.md`, `CLAUDE.md`, and `.github/copilot-instructions.md` when missing
 - seeds `.learnings/`, `.evals/`, and `docs/plans/`
@@ -206,9 +208,15 @@ Custom gh-aw sources in this repo:
 
 Plain GitHub Actions support workflows:
 
+- [`workflow-support/factory-smoke.yml`](./workflow-support/factory-smoke.yml)
 - [`workflow-support/plan-merged-dispatcher.yml`](./workflow-support/plan-merged-dispatcher.yml)
 - [`workflow-support/trigger-plan.yml`](./workflow-support/trigger-plan.yml)
 - [`workflow-support/lock-file-sync.yml`](./workflow-support/lock-file-sync.yml)
+
+Installed repos also receive optional operator harness scripts:
+
+- [`scripts/factory-smoke.sh`](./scripts/factory-smoke.sh)
+- [`scripts/factory-e2e.sh`](./scripts/factory-e2e.sh)
 
 This template still does **not** auto-install any Projects board sync workflow because those workflows are usually tied to repo-specific Projects v2 IDs, field IDs, and PAT configuration. If you want the same board-style operator view, treat it as an optional project-level customization after installation. The generic setup model is documented in [`docs/AGENT_FACTORY.md`](./docs/AGENT_FACTORY.md) and [`docs/FACTORY_STATE_MACHINE.md`](./docs/FACTORY_STATE_MACHINE.md).
 

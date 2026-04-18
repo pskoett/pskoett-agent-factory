@@ -20,6 +20,13 @@ tools:
     - "gh"
     - "gh run"
     - "gh api"
+    # Fallback path when the agent uses the MCP `download_workflow_run_artifact`
+    # tool, which returns pre-signed ZIP URLs rather than extracted files.
+    # `gh run download` extracts directly and is the preferred path (documented
+    # in the prompt), but if the agent picks the MCP tool it needs these to
+    # fetch + unzip manually.
+    - "curl"
+    - "unzip"
     - "jq"
     - "cat"
     - "grep"
