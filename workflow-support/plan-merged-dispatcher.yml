@@ -7,7 +7,7 @@ on:
       - 'docs/plans/plan-*.md'
 
 permissions:
-  contents: read
+  contents: write
   issues: write
   pull-requests: read
 
@@ -19,9 +19,10 @@ jobs:
       - name: Checkout merged plan file
         uses: actions/checkout@v5
         with:
-          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          ref: ${{ github.event.pull_request.base.ref }}
           sparse-checkout: docs/plans
           sparse-checkout-cone-mode: false
+          token: ${{ secrets.GH_AW_AGENT_TOKEN }}
 
       - name: Activate source issues from merged plan files
         env:
@@ -94,6 +95,13 @@ jobs:
               printf '%s\n' "$marker_end"
             } > /tmp/issue_body.md
 
+            issue_state=$(gh issue view "$issue_num" --json state --jq .state 2>/dev/null || echo "")
+            if [ "$issue_state" = "CLOSED" ]; then
+              echo "Source issue #$issue_num was auto-closed by the plan PR. Reopening."
+              gh issue reopen "$issue_num" --comment \
+                "Auto-reopened by plan-merged-dispatcher: the plan PR body contained a closing keyword. Plan PRs must use \`Refs #NN\` only." 2>/dev/null || true
+            fi
+
             gh issue edit "$issue_num" --body-file /tmp/issue_body.md
             gh issue edit "$issue_num" --remove-label needs-plan 2>/dev/null || true
             gh issue edit "$issue_num" --remove-label needs-spec 2>/dev/null || true
@@ -104,3 +112,61 @@ jobs:
           done <<< "$PLAN_FILES"
 
           echo "Activated $activated source issue(s)."
+
+      - name: Stamp merged plan files with status shipped
+        env:
+          GH_TOKEN: ${{ secrets.GH_AW_AGENT_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+
+          PLAN_FILES=$(gh pr diff "$PR_NUMBER" --name-only \
+            | grep -E '^docs/plans/plan-[0-9]+-.+\.md$' || true)
+
+          if [ -z "$PLAN_FILES" ]; then
+            echo "No plan files to stamp."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          stamped=0
+          while IFS= read -r plan_path; do
+            [ -f "$plan_path" ] || { echo "Plan file missing: $plan_path"; continue; }
+
+            if head -20 "$plan_path" | grep -qE '^status:'; then
+              echo "$(basename "$plan_path") already has a status marker. Skipping."
+              continue
+            fi
+
+            filename=$(basename "$plan_path")
+            plan_id=$(printf '%s' "$filename" | sed -E 's/^(plan-[0-9]+)-.*\.md$/\1/')
+            issue_num=$(printf '%s' "$filename" | sed -E 's/^plan-0*([0-9]+)-.*\.md$/\1/')
+            if ! [[ "$issue_num" =~ ^[0-9]+$ ]]; then
+              echo "Could not parse issue number from $filename. Skipping."
+              continue
+            fi
+
+            {
+              printf -- '---\n'
+              printf 'plan-id: %s\n' "$plan_id"
+              printf 'status: shipped\n'
+              printf 'shipped-in: "#%s"\n' "$issue_num"
+              printf -- '---\n'
+              cat "$plan_path"
+            } > /tmp/stamped_plan.md
+            mv /tmp/stamped_plan.md "$plan_path"
+
+            echo "Stamped $filename with status: shipped."
+            stamped=$((stamped + 1))
+          done <<< "$PLAN_FILES"
+
+          if [ "$stamped" -gt 0 ]; then
+            git add docs/plans/
+            git commit -m "chore: stamp merged plan files with status: shipped [skip ci]"
+            git push
+            echo "Pushed status stamps for $stamped plan file(s)."
+          else
+            echo "No new status stamps needed."
+          fi

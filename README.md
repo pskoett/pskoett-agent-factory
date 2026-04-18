@@ -22,6 +22,7 @@ Core properties of the current flow:
 
 - Plan files use the source issue number in the filename.
 - The implementation checklist is written back onto the source issue after a plan PR merges.
+- Merged plan files are stamped as `status: shipped`, so older plans can be treated as historical artifacts.
 - Trivial issues can go straight to Copilot without a plan PR.
 - Non-trivial issues go through a plan PR and human merge gate.
 - Only `impl:copilot` can be auto-routed.
@@ -219,10 +220,14 @@ The factory depends on these skill sources:
 - [`skills/context-surfing`](./skills/context-surfing/SKILL.md)
 - [`skills/verify-gate`](./skills/verify-gate/SKILL.md)
 - [`skills/pre-flight-check`](./skills/pre-flight-check/SKILL.md)
+- [`skills/use-agent-factory`](./skills/use-agent-factory/SKILL.md)
+
+The `use-agent-factory` skill is the operator handbook for installed repos. It explains how to start work through the factory, how to interpret labels, when to wait for a human gate, and how to recover from the common stuck states.
 
 ## Notes
 
 - Plan filenames use the source issue number, not a sequential scan.
+- Merged plans can carry lifecycle frontmatter such as `status: shipped`; treat non-`active` plans as historical context.
 - Plan PRs must not close the source issue.
 - Direct route is only for clearly bounded trivial work. When uncertain, bias toward a plan PR.
 - `impl:copilot` is the only label that auto-routes today.

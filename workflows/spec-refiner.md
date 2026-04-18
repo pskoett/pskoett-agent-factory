@@ -74,6 +74,17 @@ Read `.claude/skills/plan-interview/SKILL.md` in full and follow its process. Th
 
 This is a single-shot gh-aw run, not a live session. Follow the skill's process, but when it expects to ask the user questions, apply rule 1 from the "Adapting skills for single-shot gh-aw runs" section of `AGENTS.md`: simulate the interview by answering from issue context, and mark anything you cannot answer with confidence using `**NEEDS HUMAN INPUT**` plus a specific question.
 
+## Plan file lifecycle
+
+Plan files in `docs/plans/` may carry YAML frontmatter with a `status` field. Before treating any plan as authoritative, check that status:
+
+- `status: active`: current design. Treat as authoritative.
+- `status: shipped`: historical artifact. Use as background context only and verify current behavior against the code.
+- `status: superseded`: historical artifact. Check `superseded-by` for the replacement plan.
+- `status: abandoned`: historical artifact. Do not use as current design guidance.
+
+Do not quote or implement a `shipped`, `superseded`, or `abandoned` plan as though it describes the current system.
+
 ## Implementer recommendation (Path 1 only)
 
 Before writing the PR, append a `## Recommended implementer` section to the plan file.
@@ -144,4 +155,4 @@ Follow the writing rules in `AGENTS.md`. No em-dashes. Lead with the answer. Sho
 
 ## Session capture
 
-This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. The `learning-aggregator-ci` workflow downloads and analyzes these artifacts weekly to extract improvement patterns for the outer learning loop.

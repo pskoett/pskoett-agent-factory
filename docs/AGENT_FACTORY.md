@@ -144,6 +144,8 @@ git clone <template-repo-url> /tmp/agent-factory-template
 
 The installer copies all workflow sources, support workflows, skills, harness files, and helper scripts. It also creates the labels and runs `gh aw compile`.
 
+Installed target repos also receive the operator-facing `.claude/skills/use-agent-factory/SKILL.md` skill from this template's `skills/use-agent-factory/` source.
+
 ## First Run
 
 1. Open an issue in the target repo.
@@ -158,7 +160,7 @@ This is still the default path for anything non-trivial.
 2. The plan PR must reference the source issue with `Refs #NN`. It must not use closing keywords.
 3. A human reviews the plan PR and may swap the implementer label before merge.
 4. The plan PR merges.
-5. `plan-merged-dispatcher` writes the implementation checklist back into the source issue body and adds `ready-for-implementation`.
+5. `plan-merged-dispatcher` writes the implementation checklist back into the source issue body, adds `ready-for-implementation`, and stamps the merged plan file as `status: shipped` when lifecycle frontmatter is missing.
 6. `implementer-dispatcher` auto-assigns the source issue if it carries `impl:copilot`.
 
 ### Path 2: Direct route

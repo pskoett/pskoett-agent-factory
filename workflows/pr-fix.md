@@ -23,7 +23,19 @@ tools:
 
 safe-outputs:
   push-to-pull-request-branch:
-    allowed-files: [".github/workflows/*.md", ".github/workflows/*.lock.yml"]
+    allowed-files:
+      - "*.md"
+      - "*.yml"
+      - "*.yaml"
+      - "*.toml"
+      - "*.sh"
+      - "docs/**"
+      - "workflows/**"
+      - "workflow-support/**"
+      - "skills/**"
+      - "scripts/**"
+      - ".github/**"
+      - ".learnings/**"
   create-issue:
     title-prefix: "${{ github.workflow }}"
     labels: [automation, pr-fix]
@@ -54,4 +66,4 @@ You are an AI assistant specialized in fixing pull requests with failing CI chec
 
 ## Session capture
 
-This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. The `learning-aggregator-ci` workflow downloads and analyzes these artifacts weekly to extract improvement patterns for the outer learning loop.

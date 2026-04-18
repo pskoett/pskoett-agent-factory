@@ -95,6 +95,7 @@ Available skills in this source repo:
 - `skills/eval-creator/`: regression checks derived from promoted learnings
 - `skills/learning-aggregator/`: cross-session pattern analysis
 - `skills/pre-flight-check/`: session-start scan of relevant learnings and eval status
+- `skills/use-agent-factory/`: operator guidance for driving the installed factory correctly
 
 When a workflow tells you to use a skill, read the installed path it will use in the target repo, usually `.claude/skills/<name>/SKILL.md`. When working on this source repo, edit the canonical file under `skills/<name>/SKILL.md`.
 
@@ -128,6 +129,8 @@ Plans live in `docs/plans/plan-NNN-<slug>.md`.
 - issue `#1042` -> `plan-1042-...`
 
 Do not scan `docs/plans/` for the next sequential number.
+
+Merged plans may also carry YAML frontmatter lifecycle metadata such as `status: shipped` and `shipped-in: "#NN"`. Treat non-`active` plans as historical artifacts, not as current design contracts.
 
 ## Learnings
 

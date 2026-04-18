@@ -59,6 +59,15 @@ Read the PR's merge state using the pull request metadata and inspect `mergeStat
 
 Look at the PR for a linked issue, a `plan-NNN` reference in the title or body, or a label that identifies which plan this implements. If found, read the plan file in full. It is your ground truth for spec compliance.
 
+Before using the plan file, check its `status` field in the YAML frontmatter at the top:
+
+- `status: active` - current design. Use as authoritative ground truth.
+- `status: shipped` - historical artifact. Use it as background context only and verify current state against the live code.
+- `status: superseded` - historical artifact. Check `superseded-by` for the replacement plan and do not enforce the superseded plan.
+- `status: abandoned` - historical artifact. Do not use as review criteria.
+
+Do not enforce a `shipped`, `superseded`, or `abandoned` plan as though it represents the current accepted design. If the plan file has no frontmatter yet, treat it as `active`.
+
 If no plan file exists, note that in your review and proceed with a standard code review. Do not block the PR just because there is no plan file.
 
 ### Step 2: Identify the implementer and apply calibration
@@ -136,4 +145,4 @@ Follow the writing rules in `AGENTS.md`. No em-dashes. Direct findings with file
 
 ## Session capture
 
-This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. `learning-aggregator-ci` analyzes these artifacts weekly for outer-loop improvement patterns.
+This workflow's full session is automatically captured in the `agent` artifact for this run. The artifact includes the prompt, all tool calls, tool outputs, and token usage. The `learning-aggregator-ci` workflow downloads and analyzes these artifacts weekly to extract improvement patterns for the outer learning loop.

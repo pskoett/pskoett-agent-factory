@@ -33,7 +33,7 @@ It is still evolving. Treat it as the latest known working model, not a permanen
 |  self-improvement/     simplify-and-harden/                 |
 |  learning-aggregator/  eval-creator/                        |
 |  context-surfing/      verify-gate/                         |
-|  pre-flight-check/                                         |
+|  pre-flight-check/     use-agent-factory/                   |
 +-------------------------------------------------------------+
 
 +-------------------------------------------------------------+
@@ -165,6 +165,10 @@ Some installations also add a GitHub Projects v2 board as a read-only visualizat
 That board is optional and is **not** installed by this template by default. The factory still runs entirely from labels, PRs, comments, and plan files. If you add the board later, keep labels authoritative and let the board derive from them.
 
 See [`AGENT_FACTORY.md`](AGENT_FACTORY.md) for the generic setup model and [`FACTORY_STATE_MACHINE.md`](FACTORY_STATE_MACHINE.md) for the label-to-lane reference.
+
+## Operator Skill
+
+Installed target repos can also vendor a `use-agent-factory` skill into `.claude/skills/`. That skill is the operator-facing handbook for starting work through the factory, interpreting labels, and recovering from stuck states without reverse-engineering the workflows every time.
 
 ## Transcript Feedback
 
